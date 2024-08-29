@@ -1,6 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import HomeScreen from '../Views/HomeScreen';
+import HomeScreen from '../components/HomeScreen';
 import MyWardrobe from '../Views/MyWardrobe';
 import AIdressing from '../Views/AIDressing';
 import Recycle from '../Views/Recycle';

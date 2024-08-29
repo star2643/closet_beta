@@ -1,0 +1,122 @@
+{
+  "project_info": {
+    "project_number": "451362612871",
+    "firebase_url": "https://closet-b2d3d-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "closet-b2d3d",
+    "storage_bucket": "closet-b2d3d.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:451362612871:android:325f64b0cfa92c15dbba22",
+        "android_client_info": {
+          "package_name": "com.betaProject"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "451362612871-0foph2n2b9umq943dh9odgs6ttf93fp0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.betaProject",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "451362612871-mj4tts3f4gdb6je7g1dgj5jblndlldp0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqm1Z5yuDHOZ2FHQn1p57nmaED0Tld5BQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "451362612871-mj4tts3f4gdb6je7g1dgj5jblndlldp0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:451362612871:android:4e4d45768104e224dbba22",
+        "android_client_info": {
+          "package_name": "com.betacloset"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "451362612871-ltgdqdv3mejcu6tkif341p1mcsto509u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.betacloset",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "451362612871-mj4tts3f4gdb6je7g1dgj5jblndlldp0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqm1Z5yuDHOZ2FHQn1p57nmaED0Tld5BQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "451362612871-mj4tts3f4gdb6je7g1dgj5jblndlldp0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:451362612871:android:91a4497997b5a09edbba22",
+        "android_client_info": {
+          "package_name": "com.closetManage"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "451362612871-7pac5324bm8a5584p990uefqnmdhirdn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.closetManage",
+            "certificate_hash": "a396fe44b8b7aeda4ca3f51f90d5b86ca1a517a6"
+          }
+        },
+        {
+          "client_id": "451362612871-mj4tts3f4gdb6je7g1dgj5jblndlldp0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqm1Z5yuDHOZ2FHQn1p57nmaED0Tld5BQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "451362612871-mj4tts3f4gdb6je7g1dgj5jblndlldp0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
