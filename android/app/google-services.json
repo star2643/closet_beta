@@ -8,43 +8,6 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:451362612871:android:325f64b0cfa92c15dbba22",
-        "android_client_info": {
-          "package_name": "com.betaProject"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "451362612871-0foph2n2b9umq943dh9odgs6ttf93fp0.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.betaProject",
-            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
-          }
-        },
-        {
-          "client_id": "451362612871-mj4tts3f4gdb6je7g1dgj5jblndlldp0.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBqm1Z5yuDHOZ2FHQn1p57nmaED0Tld5BQ"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "451362612871-mj4tts3f4gdb6je7g1dgj5jblndlldp0.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:451362612871:android:4e4d45768104e224dbba22",
         "android_client_info": {
           "package_name": "com.betacloset"
@@ -94,6 +57,80 @@
           "android_info": {
             "package_name": "com.closetManage",
             "certificate_hash": "a396fe44b8b7aeda4ca3f51f90d5b86ca1a517a6"
+          }
+        },
+        {
+          "client_id": "451362612871-mj4tts3f4gdb6je7g1dgj5jblndlldp0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqm1Z5yuDHOZ2FHQn1p57nmaED0Tld5BQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "451362612871-mj4tts3f4gdb6je7g1dgj5jblndlldp0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:451362612871:android:23165134b828caa4dbba22",
+        "android_client_info": {
+          "package_name": "com.imageClass"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "451362612871-ci1rqgeq7c70en6k4m8r83i468spulb4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.imageClass",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "451362612871-mj4tts3f4gdb6je7g1dgj5jblndlldp0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqm1Z5yuDHOZ2FHQn1p57nmaED0Tld5BQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "451362612871-mj4tts3f4gdb6je7g1dgj5jblndlldp0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:451362612871:android:25aa3453f71233d3dbba22",
+        "android_client_info": {
+          "package_name": "com.imageclass"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "451362612871-a6ucn13555t8867kaqhv8aed5dvtv7fv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.imageclass",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
           }
         },
         {

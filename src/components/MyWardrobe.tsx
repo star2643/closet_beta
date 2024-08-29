@@ -1,6 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet } from 'react-native';
-
+import { View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet, Modal, Image } from 'react-native';
+import { launchImageLibrary } from 'react-native-image-picker';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import imageController from '../controllers/imageController';
 type Category = '上衣' | '下身' | '外套' | '連身';
 type SubCategory = 'Casual' | 'Formal' | 'Sport';
 
@@ -58,6 +60,8 @@ function MyWardrobe() {
   const [selectedCategory, setSelectedCategory] = useState<Category | 'All' | null>(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
   const [topSubCategory, setTopSubCategory] = useState<string | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false); // 控制 Modal 的显示状态
+  const [imageUri, setImageUri] = useState<string | null>(null); // 保存上传的图片 URI
 
   const scrollPositionRef = useRef<number>(0);
   const flatListRef = useRef<FlatList>(null);
@@ -88,6 +92,28 @@ function MyWardrobe() {
   const handleTopSubCategorySelect = (subCategory: string) => {
     setTopSubCategory(subCategory);
   };
+
+  const handleFloatingButtonPress = () => {
+    setIsModalVisible(true);
+  };
+
+  const handleImageUpload =async () => {
+    launchImageLibrary({ mediaType: 'photo', maxHeight: 640, maxWidth: 640 }, async response => {
+      if (!response.didCancel) {
+        if (response.assets && response.assets.length > 0) {
+          setImageUri(response.assets[0]?.uri);
+        }
+      }
+      
+    }
+  )};
+    // const uri=await imageController.uploadImage()
+    // if(uri){
+    //   setImageUri(uri)
+    //   const result=await imageController.temp(uri)
+    // }
+    
+  
 
   return (
     <View style={Wardrobe.container}>
@@ -175,7 +201,48 @@ function MyWardrobe() {
             }}
           />
         </View>
+
+        <TouchableOpacity style={Wardrobe.floatingButton} onPress={handleFloatingButtonPress}>
+          <Text style={Wardrobe.floatingButtonText}>+</Text>
+        </TouchableOpacity>
       </View>
+
+      {/* 从下往上弹出的 Modal */}
+      <Modal
+  animationType="slide"
+  transparent={true}
+  visible={isModalVisible}
+  onRequestClose={() => setIsModalVisible(false)}
+>
+  <View style={Wardrobe.modalContainer}>
+    <View style={Wardrobe.modalContent}>
+      <Text style={Wardrobe.modalTitle}>上傳照片</Text>
+      <TouchableOpacity style={Wardrobe.uploadButton} onPress={handleImageUpload}>
+        <Text style={Wardrobe.uploadButtonText}>選擇照片</Text>
+      </TouchableOpacity>
+      
+      {/* 如果有圖片則顯示圖片，否則顯示佔位符 */}
+      {imageUri ? (
+        <Image source={{ uri: imageUri }} style={Wardrobe.uploadedImage} />
+      ) : (
+        <View style={Wardrobe.imagePlaceholder}>
+          <Text style={Wardrobe.placeholderText}>圖片預覽</Text>
+        </View>
+      )}
+
+      {/* 新增的上傳按鈕 */}
+      <TouchableOpacity style={Wardrobe.uploadButton} onPress={handleImageUpload}>
+        <Text style={Wardrobe.uploadButtonText}>上傳</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={Wardrobe.closeButton} onPress={() => setIsModalVisible(false)}>
+        <Text style={Wardrobe.closeButtonText}>X</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+
+
     </View>
   );
 }
@@ -188,7 +255,7 @@ const Wardrobe = StyleSheet.create({
   },
   categoryMenu: {
     width: '20%',
-    backgroundColor: '#fff',
+    backgroundColor: '#B8AC9B',
     paddingVertical: 10,
   },
   categoryItem: {
@@ -227,7 +294,7 @@ const Wardrobe = StyleSheet.create({
     alignItems: 'center',
   },
   selectedSubCategoryItem: {
-    backgroundColor: '#D3D3D3',
+    backgroundColor: '#f8f0e3',
   },
   subCategoryText: {
     fontSize: 14,
@@ -259,13 +326,101 @@ const Wardrobe = StyleSheet.create({
   backButton: {
     paddingVertical: 15,
     paddingHorizontal: 10,
-    backgroundColor: '#6b5629',
+    backgroundColor: '#e1dbd1',
     alignItems: 'center',
     marginBottom: 10,
   },
   backButtonText: {
     fontSize: 16,
     color: '#333',
+    fontFamily: 'serif',
+  },
+  floatingButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 60,
+    height: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  floatingButtonText: {
+    fontSize: 24,
+    color: '#333',
+    fontFamily: 'serif',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // 背景半透明黑色
+  },
+  modalContent: {
+    backgroundColor: '#f8f0e3',
+    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    marginBottom: 10,
+    color: '#333',
+    fontFamily: 'serif',
+  },
+  uploadButton: {
+    backgroundColor: '#B8AC9B',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginBottom: 15,
+  },
+  uploadButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontFamily: 'serif',
+  },
+  uploadedImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 10,
+    marginBottom: 15,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    padding: 10,
+    backgroundColor: '#B8AC9B',
+    borderRadius: 20,
+    zIndex: 1,
+  },
+  
+  closeButtonText: {
+    color: '#fff',
+    fontSize: 18,  // 字体大小略微增大
+    fontFamily: 'serif',
+  },
+  imagePlaceholder: {
+    width: 200,
+    height: 200,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#B8AC9B', // 使用与背景相同的颜色或稍微浅一点的颜色
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f8f0e3',
+    marginBottom: 15,
+  },
+  placeholderText: {
+    color: '#B8AC9B',
+    fontSize: 16,
     fontFamily: 'serif',
   },
 });

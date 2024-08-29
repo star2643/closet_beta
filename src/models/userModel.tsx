@@ -11,9 +11,7 @@ class UserModel {
   async getUserProfile(id) {
     try {
       const user = await this.userDAO.getUserById(id);
-      if (!user) {
-        throw new Error('User not found');
-      }
+      console.log('3',user)
       // 这里可以添加更多的业务逻辑处理，例如数据转换、过滤等
       return user;
     } catch (error) {

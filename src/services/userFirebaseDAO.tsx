@@ -12,6 +12,7 @@ class firebaseUserDAO extends userDAO{
   }
   
   async getUserById(id) {
+    let w;
     try {
       let w;
       await this.reference
@@ -19,8 +20,8 @@ class firebaseUserDAO extends userDAO{
       .once('value')
       .then(snapshot => {
         console.log('User data: ', snapshot.val());
-        const w=snapshot.val()
-        
+        w=snapshot.val()
+        console.log('User data: ', snapshot.val());
       })
       return w ? w.name : null;
     } catch (error) {
