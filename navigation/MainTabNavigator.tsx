@@ -1,10 +1,10 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import HomeScreen from '../screens/HomeScreen';
-import MyWardrobe from '../screens/MyWardrobe';
-import AIdressing from '../screens/AIDressing';
-import Recycle from '../screens/Recycle';
-import Member from '../screens/Member';
+import HomeScreen from '../Views/HomeScreen';
+import MyWardrobe from '../Views/MyWardrobe';
+import AIdressing from '../Views/AIDressing';
+import Recycle from '../Views/Recycle';
+import Member from '../Views/Member';
 
 const Tab = createBottomTabNavigator();
 
