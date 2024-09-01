@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet, Modal, Image } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import imageController from '../controllers/imageController';
+import useImageController from '../controllers/imageController';
 type Category = '上衣' | '下身' | '外套' | '連身';
 type SubCategory = 'Casual' | 'Formal' | 'Sport';
 
@@ -62,9 +62,10 @@ function MyWardrobe() {
   const [topSubCategory, setTopSubCategory] = useState<string | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false); // 控制 Modal 的显示状态
   const [imageUri, setImageUri] = useState<string | null>(null); // 保存上传的图片 URI
-
+  const [clsResult, setclsResult] = useState<string | null>(null); // 保存上传的图片 URI
   const scrollPositionRef = useRef<number>(0);
   const flatListRef = useRef<FlatList>(null);
+  const { uploadImage } = useImageController();
 
   const filteredData = selectedCategory && selectedCategory !== 'All' && data[selectedCategory]
     ? selectedSubCategory
@@ -97,16 +98,15 @@ function MyWardrobe() {
     setIsModalVisible(true);
   };
 
-  const handleImageUpload =async () => {
-    launchImageLibrary({ mediaType: 'photo', maxHeight: 640, maxWidth: 640 }, async response => {
-      if (!response.didCancel) {
-        if (response.assets && response.assets.length > 0) {
-          setImageUri(response.assets[0]?.uri);
-        }
-      }
-      
+  const handleImageUpload = async () => {
+    try {
+      const result = await uploadImage();
+      console.log(result);
+      setImageUri(result.uri)
+    } catch (error) {
+      console.error('Image upload failed:', error);
     }
-  )};
+  };
     // const uri=await imageController.uploadImage()
     // if(uri){
     //   setImageUri(uri)
@@ -230,7 +230,7 @@ function MyWardrobe() {
         </View>
       )}
 
-      {/* 新增的上傳按鈕 */}
+      <Text>{clsResult}</Text>
       <TouchableOpacity style={Wardrobe.uploadButton} onPress={handleImageUpload}>
         <Text style={Wardrobe.uploadButtonText}>上傳</Text>
       </TouchableOpacity>

@@ -1,11 +1,11 @@
 // controllers/UserProfileController.js
 import UserModel from '../models/userModel';
-import UserFirebaseDAO from '../services/userFirebaseDAO';
+
 
 class UserProfileController {
   private Model
   constructor() {
-    this.Model = new UserModel(UserFirebaseDAO);
+    this.Model = new UserModel();
   }
 
   async fetchUserProfile(userId) {

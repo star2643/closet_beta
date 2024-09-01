@@ -3,7 +3,7 @@ import UserDAO from '../services/userFirebaseDAO';
 
 class UserModel {
   private userDAO:UserDAO;
-  constructor(userDAO) {
+  constructor() {
     
     this.userDAO = new UserDAO();
   }
