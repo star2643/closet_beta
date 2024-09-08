@@ -1,11 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ScrollView, Text, View, Image, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
-
+import { useAuth } from '../services/AuthContext'; 
 function HomeScreen() {
   const scrollViewRef = useRef(null);
   const [viewHeight, setViewHeight] = useState(0);
   const [currentDate, setCurrentDate] = useState('');
-
+  
   useEffect(() => {
     const interval = setInterval(() => {
       const today = new Date();

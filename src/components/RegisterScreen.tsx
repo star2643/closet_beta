@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { NavigationProp } from '@react-navigation/native';
-
+import { useAuth } from '../services/AuthContext'; 
 interface RegisterScreenProps {
   navigation: NavigationProp<any, any>;
 }
@@ -10,12 +10,18 @@ function RegisterScreen({ navigation }: RegisterScreenProps) {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  const handleRegister = () => {
-    // 处理注册逻辑
-    console.log('Register button clicked');
+  const { signUp } = useAuth();
+  const handleRegister = async () => {
+    try {
+      await signUp(email, password);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' as never }],
+      });
+    } catch (error) {
+      console.log('登入失敗'+error);
+    }
   };
-
   const handleBack = () => {
     navigation.goBack(); // 返回到登录页面
   };

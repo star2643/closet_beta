@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import CheckBox from '@react-native-community/checkbox';
 import { NavigationProp } from '@react-navigation/native';
+import { useAuth } from '../services/AuthContext';
+import { Alert } from 'react-native';
 
 interface LoginScreenProps {
   navigation: NavigationProp<any, any>;
@@ -11,14 +13,22 @@ function LoginScreen ({ navigation }: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
-
-  const handleLogin = () => {
-    const isLoggedIn = true; // 假设用户登录成功
-
-    if (isLoggedIn) {
-      navigation.replace('Home'); // 登录成功后跳转到主页面（MainTabNavigator）
-    } else {
-      console.log('Login failed. Please try again.');
+  const { signIn } = useAuth();
+  const handleLogin = async () => {
+    try {
+      if (!email || !password) {
+        Alert.alert('錯誤', '請輸入帳號和密碼');
+        return;
+      }
+      
+      await signIn(email, password);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' as never }],
+      });
+    } catch (error) {
+      console.log('登入失敗', error);
+      Alert.alert('登入失敗', '請檢查您的帳號和密碼是否正確');
     }
   };
   const handleRegister = () => {
@@ -94,7 +104,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 20,
+    padding: 30,
   },
   title: {
     fontSize: 24,

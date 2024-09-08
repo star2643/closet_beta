@@ -20,20 +20,12 @@ class UserModel {
     }
   }
 
-  async createUser(userData) {
-    try {
-      // 数据验证和处理
-      if (!userData.name || !userData.email) {
-        throw new Error('Invalid user data');
-      }
-      const userId = await this.userDAO.createUser(userData);
-      return userId;
-    } catch (error) {
-      console.error('Error in createUser:', error);
-      throw error;
-    }
+  async createUserByEmail(userEmail:string,userPassword:string) {
+    this.userDAO.createUserByEmail(userEmail,userPassword)
   }
-
+  async createUserByGoogle(userEmail:string,userPassword:string) {
+    this.userDAO.createUserByEmail(userEmail,userPassword)
+  }
   // 可以添加其他与用户相关的业务逻辑方法...
 }
 

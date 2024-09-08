@@ -2,9 +2,24 @@ import React, { useState,useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import UserProfileController from '../controllers/userProfileController'
+import { useAuth } from '../services/AuthContext'; 
+import { useNavigation } from '@react-navigation/native';
 function Member() {
   const [profilePic, setProfilePic] = useState('https://via.placeholder.com/80');
   const [User,setUser]=useState();
+  const { user, signOut } = useAuth();
+  const navigation = useNavigation();
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' as never }],
+      });
+    } catch (error) {
+      console.error('登出失敗:', error);
+    }
+  };
   const handleImagePicker = () => {
     launchImageLibrary(
       {
@@ -73,7 +88,7 @@ function Member() {
           <Text style={styles.menuText}>帳號設置</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={signOut}>
           <Text style={styles.menuText}>退出登入</Text>
         </TouchableOpacity>
       </View>
