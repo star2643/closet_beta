@@ -13,7 +13,7 @@ function RegisterScreen({ navigation }: RegisterScreenProps) {
   const { signUp } = useAuth();
   const handleRegister = async () => {
     try {
-      await signUp(email, password);
+      await signUp(username,email, password);
       navigation.reset({
         index: 0,
         routes: [{ name: 'Home' as never }],

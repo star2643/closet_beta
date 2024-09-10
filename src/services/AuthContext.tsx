@@ -1,11 +1,12 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-
+import { firebase } from '@react-native-firebase/database';
+import database from '@react-native-firebase/database';
 interface AuthContextData {
   user: FirebaseAuthTypes.User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (userName:string,email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
 }
@@ -37,10 +38,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (userName:string,email: string, password: string) => {
     try {
       await auth().createUserWithEmailAndPassword(email, password);
-    } catch (error) {
+      const uid=auth().currentUser?.uid;
+      database()
+      .ref('/users/'+uid)
+      .update({
+        name:userName,
+        brithday:null,
+        current_clothe_number:0,
+        total_clothe_number:0,
+        discarded_clothe_number:0
+      }).then(() => console.log('Data updated.'));
+  }
+      
+     catch (error) {
       console.error('Sign up error:', error);
       throw error;
     }

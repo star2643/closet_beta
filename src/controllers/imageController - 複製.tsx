@@ -4,8 +4,8 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import ImageResizer from 'react-native-image-resizer';
 import { convertToRGB } from 'react-native-image-to-rgb';
 import imageModel from '../models/imageModel';
-function useImageController(model1) {
-  const model = model1;
+function useImageController() {
+  const model = useTensorflowModel(require('../assets/major1.tflite'));
   const imgModel= new imageModel();
   const resizeImage = async (uri: string, width: number, height: number) => {
     try {
@@ -149,29 +149,17 @@ function useImageController(model1) {
       });
     });
   };
-  const uploadImageToDatabase = async (URI,classes) => {
+  const uploadImageToDatabase = async (URI) => {
     try {
-      const uploadProfile = await imgModel.uploadImage(URI,classes);
-      return uploadProfile;
+      const userProfile = await imgModel.uploadImage(URI);
+      return userProfile;
     } catch (error) {
       console.error('Error fetching user profile:', error);
       throw error;
     }
   };
-  const listAll= async()=>{
-    try {
-      const tmp=await imgModel.listAll();
-      console.log(tmp+"fast!!!"+typeof tmp)
-      const array=JSON.parse(tmp);
-      return array
-    }
-    catch (error) {
-      console.error('Error fetching img profile1:', error);
-      throw error;
-    }
-  }
   return {
-    uploadImage,uploadImageToDatabase,listAll
+    uploadImage,uploadImageToDatabase
   };
   
 }

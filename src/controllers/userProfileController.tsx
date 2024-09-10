@@ -18,29 +18,7 @@ class UserProfileController {
     }
   }
 
-  async createNewUser(userEmail:string,userPassword:string,createType:string) {
-    switch(createType){
-      case 'email':{
-        try {
-          const userId = await this.Model.createUserByEmail(userEmail,userPassword);
-          return userId;
-        } catch (error) {
-          console.error('Error creating new user:', error);
-          throw error;
-        }
-      }
-      case 'google':{
-        try {
-          const userId = await this.Model.createUserByEmail(userEmail,userPassword);
-          return userId;
-        } catch (error) {
-          console.error('Error creating new user:', error);
-          throw error;
-        }
-      }
-    }
-    
-  }
+  
 }
 
 export default new UserProfileController();

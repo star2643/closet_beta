@@ -20,12 +20,7 @@ class UserModel {
     }
   }
 
-  async createUserByEmail(userEmail:string,userPassword:string) {
-    this.userDAO.createUserByEmail(userEmail,userPassword)
-  }
-  async createUserByGoogle(userEmail:string,userPassword:string) {
-    this.userDAO.createUserByEmail(userEmail,userPassword)
-  }
+ 
   // 可以添加其他与用户相关的业务逻辑方法...
 }
 
