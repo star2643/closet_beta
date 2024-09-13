@@ -9,8 +9,8 @@ const engToCHListconst:{ [key: string]: string }= {'main-bottom': '下裝',
   'main-jacket': '外套',
   'main-one-piece': '連身',
   'main-top': '上裝',
-  'secondary Jacket': '有帽外套',
-  'secondary Jacket -without hood-': '無帽外套',
+  'secondary Jacket': '有帽',
+  'secondary Jacket -without hood-': '無帽',
   'secondary Jumpsuit': '連身褲',
   'secondary Long pants': '長褲',
   'secondary Long sleeves': '長袖',
@@ -18,10 +18,10 @@ const engToCHListconst:{ [key: string]: string }= {'main-bottom': '下裝',
   'secondary Short skirt': '短裙',
   'secondary Short sleeves': '短袖',
   'secondary Shorts': '短褲',
-  'secondary Sleeveless top': '無袖上裝',
+  'secondary Sleeveless top': '無袖',
   'secondary-capri-pants': '七分褲',
   'secondary-long-skirt': '長裙',
-  'secondary-three-quarter-sleeve-top': '七分袖上裝',
+  'secondary-three-quarter-sleeve-top': '七分袖',
   'tertiary Blazer': '西裝外套',
   'tertiary Cargo pants': '工裝褲',
   'tertiary Coat': '大衣',
@@ -49,17 +49,17 @@ const engToCHListconst:{ [key: string]: string }= {'main-bottom': '下裝',
 
 const categories: (Category | 'All')[] = ['All', '上裝', '下裝', '連身', '外套'];
 const subCategories = {
-  上裝: ['無袖上裝', '短袖', '七分袖上裝', '長袖'],
+  上裝: ['無袖', '短袖', '七分袖', '長袖'],
   下裝: ['短裙', '長裙', '短褲', '長褲', '七分褲'],
   連身: ['連身裙', '連身褲'],
-  外套: ['有帽外套', '無帽外套'],
+  外套: ['有帽', '無帽'],
 };
 
 const topSubCategories = {
-  無袖上裝: ['背心'],
+  無袖: ['背心'],
   短袖: ['襯衫', 'T恤', '連帽衫'],
   長袖: ['襯衫', 'T恤', '連帽衫'],
-  七分袖上裝: ['襯衫', 'T恤', '連帽衫'],
+  七分袖: ['襯衫', 'T恤', '連帽衫'],
   短褲: ['牛仔褲', '西裝褲', '工裝褲', '棉褲'],
   七分褲: ['牛仔褲', '西裝褲', '工裝褲', '棉褲'],
   長褲: ['牛仔褲', '西裝褲', '工裝褲', '棉褲'],
@@ -67,11 +67,11 @@ const topSubCategories = {
   連身裙: [],
   連身褲: [],
   長裙: ['牛仔裙', '西裝裙', '工裝裙', '百褶裙'],
-  無帽外套: ['西裝外套', '大衣', '罩衫', '羽絨外套','牛仔夾克'],
-  有帽外套: ['羽絨外套'],
+  無帽: ['西裝外套', '大衣', '罩衫', '羽絨外套','牛仔夾克'],
+  有帽: ['羽絨外套'],
 };
-const moreOptionsByinitial=['長袖', '連衣裙', '短裙', '短袖', '短褲', '無袖上裝', '七分褲', '長裙', '七分袖上裝', '西裝外套', '工裝褲', '大衣', '棉褲', '牛仔夾克', '牛仔裙', '連帽衫', '西裝褲', '背心', 'T恤', '罩衫', '羽絨外套', '牛仔褲', '其他長袖', '其他褲子', '其他短袖', '其他裙子', '百褶裙', '襯衫', '西裝裙', '工裝裙']
-const setItemsByinitial=['下裝', '外套', '連身', '上裝', '有帽外套', '無帽外套', '連身褲', '長褲']
+const moreOptionsByinitial=['長袖', '連衣裙', '短裙', '短袖', '短褲', '無袖', '七分褲', '長裙', '七分袖', '西裝外套', '工裝褲', '大衣', '棉褲', '牛仔夾克', '牛仔裙', '連帽衫', '西裝褲', '背心', 'T恤', '罩衫', '羽絨外套', '牛仔褲', '其他長袖', '其他褲子', '其他短袖', '其他裙子', '百褶裙', '襯衫', '西裝裙', '工裝裙']
+const setItemsByinitial=['下裝', '外套', '連身', '上裝', '有帽', '無帽', '連身褲', '長褲']
 function MyWardrobe() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<Category | 'All' | null>(null);
@@ -95,6 +95,8 @@ function MyWardrobe() {
   const {listAll}=imageController(model1)
   const {uploadImageToDatabase} =imageController(model1)
   const [data, setData] = useState<[{ 'fileName': string; 'url': string;'classes': string[] }[]]>(initialData);
+  const [isItemModalVisible, setIsItemModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
   useEffect(() => {
     async function initializeImageController() {
       try {
@@ -401,10 +403,27 @@ function MyWardrobe() {
             data={filteredData}
             keyExtractor={(item) => item.fileName}
             renderItem={({ item }) => (
-              <View style={Wardrobe.itemContainer}>
+              <TouchableOpacity style={Wardrobe.itemContainer}
+              onPress={() => {
+                setSelectedItem(item); // 設置選中的物品
+                setIsItemModalVisible(true); // 顯示彈窗
+              }}>
                  <Image source={{ uri: item.url }} style={Wardrobe.itemImage} />
-                <Text style={Wardrobe.itemText}>{item.classes.join(', ')}</Text>
-              </View>
+                <View style={{width:'100%',flex:1,flexDirection :'row',justifyContent: 'space-between'}}>
+                  {item.classes
+                          
+                          .map(itemClass => (
+                            <TouchableOpacity
+                              key={itemClass}
+                              
+                              style={Wardrobe.roundButton2}
+                              
+                            >
+                              <Text style={Wardrobe.buttonText2}>{itemClass}</Text>
+                            </TouchableOpacity>
+                  ))}
+                 </View>
+              </TouchableOpacity>
             )}
             numColumns={2}
             contentContainerStyle={Wardrobe.flatListContent}
@@ -415,7 +434,43 @@ function MyWardrobe() {
           <Text style={Wardrobe.floatingButtonText}>+</Text>
         </TouchableOpacity>
       </View>
+      {/* 選擇的衣物彈出視窗 */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isItemModalVisible}
+        onRequestClose={() => setIsItemModalVisible(false)}
+      >
+        <View style={Wardrobe.modalContainer}>
+          <View style={Wardrobe.modalContent}>
+            {selectedItem && (
+              <>
+                <Text style={Wardrobe.modalTitle}>分類: {selectedItem.classes}</Text>
+                <Text style={Wardrobe.modalTitle}>名稱: {selectedItem.fileName}</Text>
+              </>
+            )}
 
+            <TouchableOpacity
+              style={Wardrobe.closeButton}
+              onPress={() => setIsItemModalVisible(false)}
+            >
+              <Text style={Wardrobe.closeButtonText}>X</Text>
+            </TouchableOpacity>
+
+            {/* 新增刪除按鈕 */}
+            <TouchableOpacity
+              style={Wardrobe.deleteButton}
+              onPress={() => {
+                // 在此處添加刪除的邏輯
+                console.log('Item deleted:', selectedItem);
+                setIsItemModalVisible(false); // 关掉弹窗
+              }}
+            >
+              <Text style={Wardrobe.deleteButtonText}>刪除</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       {/* 从下往上弹出的 Modal */}
       <Modal
         animationType="slide"
@@ -540,6 +595,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',        // 自动换行
     justifyContent: 'space-between', // 均匀分布
     padding: 10,
+    borderWidth: 2,
   },
   roundButton: {
     width: 64,            // 按钮宽度，确保两列显示
@@ -561,8 +617,8 @@ const styles = StyleSheet.create({
 });
 const Wardrobe = StyleSheet.create({
   itemImage: {
-    width: 100,
-    height: 100,
+    flex: 3, // 高度占用剩餘空間的3倍
+    aspectRatio: 1, // 保持寬高相等
     marginTop: 10,
     borderRadius: 10,
   },
@@ -815,15 +871,41 @@ const Wardrobe = StyleSheet.create({
     justifyContent: 'center',
     width: '18%',
   },
+  roundButton2: {
+    backgroundColor: '#fff',
+    padding: 6,
+    borderRadius: 20,
+    marginHorizontal: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
   selectedButton: {
     backgroundColor: '#E0E0E0', // Selected button color
   },
   buttonText: {
     color: '#B8AC9B',
     fontSize: 14,
+  },buttonText2: {
+    color: '#B8AC9B',
+    fontSize: 12,
   },scrollViewContent: {
     flexGrow: 1,
     justifyContent: 'center',
+  },
+  deleteButton: {
+    position: 'absolute', // 將按鈕固定在底部
+    bottom: 20, // 距離底部20px
+    alignSelf: 'center', // 按鈕置中
+    backgroundColor: '#FF6347', // 刪除按鈕的背景色
+    paddingVertical: 10,
+    paddingHorizontal: 40,
+    borderRadius: 20,
+  },
+  deleteButtonText: {
+    color: '#fff', // 刪除按鈕的文本顏色
+    fontSize: 18,
+    fontFamily: 'serif',
   },
 });
 
