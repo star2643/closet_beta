@@ -1,9 +1,8 @@
 import React, { useState, useRef,useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet, Modal, Image,ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet, Modal, Image,ActivityIndicator, Alert,Animated, Easing } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import imageController from '../controllers/imageController';
-import { useTensorflowModel } from 'react-native-fast-tflite';
+import { useData } from '../services/DataContext'
+import { preloadImages } from '../services/imagePreloader';
 type Category = '上裝' | '下裝' | '外套' | '連身';
 const engToCHListconst:{ [key: string]: string }= {'main-bottom': '下裝',
   'main-jacket': '外套',
@@ -72,85 +71,33 @@ const topSubCategories = {
 };
 const moreOptionsByinitial=['長袖', '連衣裙', '短裙', '短袖', '短褲', '無袖', '七分褲', '長裙', '七分袖', '西裝外套', '工裝褲', '大衣', '棉褲', '牛仔夾克', '牛仔裙', '連帽衫', '西裝褲', '背心', 'T恤', '罩衫', '羽絨外套', '牛仔褲', '其他長袖', '其他褲子', '其他短袖', '其他裙子', '百褶裙', '襯衫', '西裝裙', '工裝裙']
 const setItemsByinitial=['下裝', '外套', '連身', '上裝', '有帽', '無帽', '連身褲', '長褲']
+type DataItemWithBase64 = {
+  fileName: string;
+  url: string;
+  classes: string[];
+  base64: string;
+};
 function MyWardrobe() {
-  const [isLoading, setIsLoading] = useState(true);
+  const { data, setData,isLoading, uploadImage, uploadImageToDatabase } = useData();
+  const [isPreloading, setIsPreloading] = useState(true);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.5)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const [preloadedData, setPreloadedData] = useState<DataItemWithBase64[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | 'All' | null>(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
   const [topSubCategory, setTopSubCategory] = useState<string | null>(null);
-  const [isModalVisible, setIsModalVisible] = useState(false); // 控制 Modal 的显示状态
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const [isMoreOptionsVisible, setIsMoreOptionsVisible] = useState(false);
-  const [imageUri, setImageUri] = useState<string | null>(null); // 保存上传的图片 URI
-  const [clsResult, setclsResult] = useState<string | null>(null); // 保存上传的图片 URI
-  const scrollPositionRef = useRef<number>(0);
-  const flatListRef = useRef<FlatList>(null);
+  const [imageUri, setImageUri] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  //const [moreOptions, setMoreOptions] = useState(['9', '10', '11', '12', '13', '14', '15', '16', '17']);
-  //const [items,setItems] = useState(['1', '2', '3', '4','5', '6', '7', '8']);
   const [moreOptions, setMoreOptions] = useState(moreOptionsByinitial);
-  const [items,setItems] = useState(setItemsByinitial);
-  const originalOptions = useRef(moreOptions.slice()); // 保存原始順序
+  const [items, setItems] = useState(setItemsByinitial);
   const [loading, setLoading] = useState(false);
-  const [uploadImage, setUploadImage] = useState<(() => Promise<any>) | null>(null);
-  const model1 =useTensorflowModel(require('../assets/major1.tflite'));
-  const {listAll}=imageController(model1)
-  const {uploadImageToDatabase} =imageController(model1)
-  const [data, setData] = useState<[{ 'fileName': string; 'url': string;'classes': string[] }[]]>(initialData);
   const [isItemModalVisible, setIsItemModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  useEffect(() => {
-    async function initializeImageController() {
-      try {
-        // 確保模型載入完成後才執行以下程式碼
-        if (model1) {
-          // 等待模型載入完成
-          await model1;
-          
-          // 當模型載入完成後，初始化 imageController 並進行後續操作
-          const imgController = imageController(model1);
-          setUploadImage(() => imgController.uploadImage);
-  
-          // 獲取圖片列表
-          getImageList();
-  
-          // 設定 loading 為 false，表示初始化完成
-          setIsLoading(false);
-        }
-      } catch (error) {
-        console.error("Error initializing the image controller:", error);
-        setIsLoading(false);
-      }
-    }
-  
-    // 執行初始化函數
-    initializeImageController();
-  }, [model1]);  // 添加 model1 作為依賴，確保在模型更新時重新初始化
-  const getImageList=async()=>{
-      const s= await listAll()
-      setData(s)
-      console.log(data)
-  }
-  
-  useEffect(() => {
-    console.log("myArray has changed:", data);
-    // 在这里执行你希望在数组内容变动时的逻辑
-  }, [data]); // 依赖项是 myArray
-  const filteredData = data.filter((item) => {
-    if (selectedCategory && selectedCategory !== 'All') {
-      // 如果选择了主分类，检查 type 数组是否包含该分类
-      if (!item.classes.includes(selectedCategory)) return false;
-    }
-    if (selectedSubCategory) {
-      // 如果选择了次分类，检查 type 数组是否包含该次分类
-      if (!item.classes.includes(selectedSubCategory)) return false;
-    }
-    if (topSubCategory) {
-      // 如果选择了顶级次分类，检查 type 数组是否包含该顶级次分类
-      if (!item.classes.includes(topSubCategory)) return false;
-    }
-    return true;
-  });
 
-  const handleCategorySelect = (category: string | 'All') => {
+  const handleCategorySelect = (category: Category | 'All') => {
     setSelectedCategory(category === 'All' ? null : category);
     setSelectedSubCategory(null);
     setTopSubCategory(null);
@@ -164,92 +111,90 @@ function MyWardrobe() {
   const handleTopSubCategorySelect = (subCategory: string) => {
     setTopSubCategory(subCategory);
   };
+
   const handleFloatingButtonPress = () => {
     setIsModalVisible(true);
-    setLoading(false)
+    setLoading(false);
   };
 
   const handleImageUpload = async () => {
     setLoading(true);
-    const CH_label=[]
+    const CH_label = [];
     try {
-      
-      const result = await uploadImage();
-      console.log(result);
-      for (const label of result.labels) {
-        // 在這裡對每個 label 進行操作
-        const translatedLabel = engToCHListconst[label];
-        CH_label.push(translatedLabel)
+      if (uploadImage) {
+        const result = await uploadImage();
+        console.log(result);
+        for (const label of result.labels) {
+          const translatedLabel = engToCHListconst[label];
+          CH_label.push(translatedLabel);
+        }
+        setItems((prevItems) => prevItems.filter(i => !CH_label.includes(i)));
+        setMoreOptions((prevItems) => prevItems.filter(i => !CH_label.includes(i)));
+        setSelectedItems((prevOptions) => [...prevOptions, ...CH_label]);
+        setImageUri(result.uri);
       }
-      setItems((prevItems) => {
-        const updatedItems = prevItems.filter(i => !CH_label.includes(i)); // 使用 includes 來篩選掉多個項目
-        return updatedItems;
-      })
-      setMoreOptions((prevItems) => {
-        const updatedItems = prevItems.filter(i => !CH_label.includes(i)); // 使用 includes 來篩選掉多個項目
-        return updatedItems;
-      })
-      setSelectedItems((prevOptions) => [...prevOptions, ...CH_label]);
-      
-      setImageUri(result.uri)
-      console.log(result.uri)
     } catch (error) {
-      console.error('Image upload failed:', error);
+      console.error('Image upload failed1:', error);
     }
-    
-    setLoading(false); 
-
+    setLoading(false);
   };
   useEffect(() => {
+    const preloadAllImages = async () => {
+      if (data.length > 0) {
+        setIsPreloading(true);
+        const imageUrls = data.map(item => item.url);
+        const base64Images = await preloadImages(imageUrls);
+        
+        const newPreloadedData = data.map(item => ({
+          ...item,
+          base64: base64Images[item.url] || item.url
+        }));
+
+        setPreloadedData(newPreloadedData);
+        setIsPreloading(false);
+      }
+    };
+
+    preloadAllImages();
+  }, [data]);
+  useEffect(() => {
     if (imageUri) {
-      // 當 imageUri 有值時，圖片已加載，執行你需要的其他方法
       handleAfterImageLoad();
     }
   }, [imageUri]);
 
-  // 這是圖片加載後執行的方法
   const handleAfterImageLoad = () => {
-    // 在這裡執行你希望的其他方法
-    console.log(selectedItems.length,' ',items.length,' ',moreOptions.length);
     setItems((prevItems) => {
-      const total_num=selectedItems.length+items.length
-      const toMove_num=total_num-8
-      const tmpArr=[]
-      for (let i=0;i<toMove_num;i++){
-          tmpArr.push(prevItems.pop())
-      }         // 保留前8個
-      
-      // 更新 moreOptions，一次性添加所有多餘的項目
+      const total_num = selectedItems.length + items.length;
+      const toMove_num = total_num - 8;
+      const tmpArr = [];
+      for (let i = 0; i < toMove_num; i++) {
+        tmpArr.push(prevItems.pop());
+      }
       setMoreOptions((prevOptions) => [...prevOptions, ...tmpArr]);
-    
-      return prevItems;  // 返回只保留8個的項目
+      return prevItems;
     });
-    
   };
-  const initialOption=()=>{
-    setMoreOptions(moreOptionsByinitial)
-    setItems(setItemsByinitial)
-    setSelectedItems([])
+
+  const initialOption = () => {
+    setMoreOptions(moreOptionsByinitial);
+    setItems(setItemsByinitial);
+    setSelectedItems([]);
     setIsModalVisible(false);
-  }
-  const uploadToDatabase= async () =>{
-    if(imageUri&&selectedItems.length>0){
-      await uploadImageToDatabase(imageUri,selectedItems)
-      await setData((preData)=>{
-        preData.push({fileName:imageUri,url:imageUri,classes:selectedItems})
-        console.log(preData+'www')
-        return preData
-      })
-      initialOption()
-      Alert.alert("上傳成功!")
+  };
+
+  const uploadToDatabase = async () => {
+    if (imageUri && selectedItems.length > 0 && uploadImageToDatabase) {
+      await uploadImageToDatabase(imageUri, selectedItems);
+      setPreloadedData((prevData) => [...prevData, { fileName: imageUri, url: imageUri,base64:'', classes: selectedItems }]);
+      initialOption();
+      Alert.alert("上傳成功!");
+    } else if (imageUri) {
+      Alert.alert("請選擇至少一個標籤");
+    } else {
+      Alert.alert("請先上傳圖片");
     }
-    else if(imageUri){
-      Alert.alert("請選擇至少一個標籤")
-    }
-    else{
-      Alert.alert("請先上傳圖片")
-    }
-  }
+  };
   const toggleSelection = (item: string) => {
     setSelectedItems((prevItems) => {
       if (prevItems.includes(item)) {
@@ -332,13 +277,73 @@ function MyWardrobe() {
     // }
     
   
-    if (isLoading) {
+    useEffect(() => {
+      if (isLoading || isPreloading) {
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.spring(scaleAnim, {
+            toValue: 1,
+            friction: 4,
+            useNativeDriver: true,
+          }),
+          Animated.timing(progressAnim, {
+            toValue: 1,
+            duration: 2000,
+            useNativeDriver: false,
+          })
+        ]).start();
+      }
+    }, [isLoading, isPreloading, fadeAnim, scaleAnim, progressAnim]);
+    // ... 其他代碼保持不變
+  
+    if (isLoading || isPreloading) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#B8AC9B" />
+          <Animated.View style={[
+            styles.loadingContent,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }]
+            }
+          ]}>
+            <ActivityIndicator size="large" color="#B8AC9B" />
+            <Text style={styles.loadingText}>
+              {isPreloading ? "正在為您準備精美衣櫃..." : "正在整理您的時尚單品..."}
+            </Text>
+            <View style={styles.progressBar}>
+              <Animated.View 
+                style={[
+                  styles.progressFill,
+                  {
+                    transform: [{
+                      scaleX: progressAnim
+                    }],
+                    transformOrigin: 'left',
+                  }
+                ]} 
+              />
+            </View>
+          </Animated.View>
         </View>
       );
     }
+  
+    const filteredData = preloadedData.filter((item) => {
+      if (selectedCategory && selectedCategory !== 'All') {
+        if (!item.classes.includes(selectedCategory)) return false;
+      }
+      if (selectedSubCategory) {
+        if (!item.classes.includes(selectedSubCategory)) return false;
+      }
+      if (topSubCategory) {
+        if (!item.classes.includes(topSubCategory)) return false;
+      }
+      return true;
+    });
   return (
     <View style={Wardrobe.container}>
       <View style={Wardrobe.categoryMenu}>
@@ -408,7 +413,9 @@ function MyWardrobe() {
                 setSelectedItem(item); // 設置選中的物品
                 setIsItemModalVisible(true); // 顯示彈窗
               }}>
-                 <Image source={{ uri: item.url }} style={Wardrobe.itemImage} />
+                  {item.base64?(<Image source={{ uri: item.base64 }} style={Wardrobe.itemImage} />):(
+                    <Image source={{ uri: item.url }} style={Wardrobe.itemImage} />
+                  )}
                 <View style={{width:'100%',flex:1,flexDirection :'row',justifyContent: 'space-between'}}>
                   {item.classes
                           
@@ -588,7 +595,43 @@ function MyWardrobe() {
 }
 const styles = StyleSheet.create({
   loadingContainer: {
-    marginTop: 20,
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  },
+  loadingContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#555',
+    textAlign: 'center',
+  },
+  progressBar: {
+    height: 4,
+    width: 200,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 2,
+    marginTop: 10,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    width: '100%',
+    backgroundColor: '#B8AC9B',
   },
   container: {
     flexDirection: 'row',    // 横向排列
