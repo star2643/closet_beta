@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image,ActivityIndicator  } from 'react-native';
 import CheckBox from '@react-native-community/checkbox';
 import { NavigationProp } from '@react-navigation/native';
 import { useAuth } from '../services/AuthContext';
 import { Alert } from 'react-native';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 interface LoginScreenProps {
   navigation: NavigationProp<any, any>;
@@ -13,14 +14,35 @@ function LoginScreen ({ navigation }: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
-  const { signIn } = useAuth();
-  const handleLogin = async () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const { signIn,signInWithGoogle } = useAuth();
+  
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
     try {
-      if (!email || !password) {
-        Alert.alert('錯誤', '請輸入帳號和密碼');
-        return;
+      const check=await signInWithGoogle();
+      if(!check){
+        return
       }
-      
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' as never }],
+      });
+    } catch (error) {
+      console.log('Google 登入失敗', error);
+      Alert.alert('登入失敗', 'Google 登入過程中發生錯誤，請稍後再試');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('錯誤', '請輸入帳號和密碼');
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
       await signIn(email, password);
       navigation.reset({
         index: 0,
@@ -29,8 +51,11 @@ function LoginScreen ({ navigation }: LoginScreenProps) {
     } catch (error) {
       console.log('登入失敗', error);
       Alert.alert('登入失敗', '請檢查您的帳號和密碼是否正確');
+    } finally {
+      setIsLoading(false);
     }
   };
+
   const handleRegister = () => {
     navigation.navigate('Register'); // 跳转到注册页面
   };
@@ -68,19 +93,30 @@ function LoginScreen ({ navigation }: LoginScreenProps) {
             <Text style={styles.forgotPasswordText}>忘記密碼？</Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+        <TouchableOpacity 
+          style={[styles.loginButton, isLoading && styles.loginButtonDisabled]} 
+          onPress={handleLogin}
+          disabled={isLoading}
+        >
+        {isLoading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
           <Text style={styles.loginButtonText}>登入</Text>
-        </TouchableOpacity>
+        )}
+      </TouchableOpacity>
         <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
           <Text style={styles.registerButtonText}>註冊</Text>
         </TouchableOpacity>
         <Text style={styles.thirdPartyText}>使用第三方登入</Text>
         <View style={styles.thirdPartyIcons}>
-          <Image source={require('../assets/Images/google.png')} style={{ width: 30, height: 30 }} />
+          <TouchableOpacity onPress={handleGoogleSignIn} disabled={isLoading}>
+            <Image source={require('../assets/Images/google.png')} style={{ width: 30, height: 30 }} />
+          </TouchableOpacity>
           <Image source={require('../assets/Images/fb.png')} style={{ width: 40, height: 45 }} />
           <Image source={require('../assets/Images/line.png')} style={{ width: 40, height: 30 }} />
         </View>
       </View>
+      
     </View>
   );
 };
@@ -150,6 +186,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     paddingVertical: 10,
     marginBottom: 10,
+    alignItems: 'center', // 確保 ActivityIndicator 居中
   },
   loginButtonText: {
     color: '#fff',
@@ -171,6 +208,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 10,
     color: '#8B4513',
+  },
+  loginButtonDisabled: {
+    backgroundColor: '#A9A9A9', // 登入中時的顏色
   },
   
   thirdPartyIcons: {

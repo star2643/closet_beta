@@ -78,8 +78,9 @@ type DataItemWithBase64 = {
   base64: string;
 };
 function MyWardrobe() {
-  const { data, setData,isLoading, uploadImage, uploadImageToDatabase } = useData();
+  const { data,isLoading, uploadImage, uploadImageToDatabase ,setData} = useData();
   const [isPreloading, setIsPreloading] = useState(true);
+  const [firstwithPreload, setfirstwithPreload] = useState(true);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.5)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -139,8 +140,9 @@ function MyWardrobe() {
     setLoading(false);
   };
   useEffect(() => {
+    
     const preloadAllImages = async () => {
-      if (data.length > 0) {
+      if (data.length > 0&&firstwithPreload) {
         setIsPreloading(true);
         const imageUrls = data.map(item => item.url);
         const base64Images = await preloadImages(imageUrls);
@@ -152,6 +154,7 @@ function MyWardrobe() {
 
         setPreloadedData(newPreloadedData);
         setIsPreloading(false);
+        setfirstwithPreload(false)
       }
     };
 
@@ -187,6 +190,7 @@ function MyWardrobe() {
     if (imageUri && selectedItems.length > 0 && uploadImageToDatabase) {
       await uploadImageToDatabase(imageUri, selectedItems);
       setPreloadedData((prevData) => [...prevData, { fileName: imageUri, url: imageUri,base64:'', classes: selectedItems }]);
+      setData((prevData) => [...prevData, { fileName: imageUri, url: imageUri, classes: selectedItems }]);
       initialOption();
       Alert.alert("上傳成功!");
     } else if (imageUri) {
@@ -301,6 +305,9 @@ function MyWardrobe() {
     // ... 其他代碼保持不變
   
     if (isLoading || isPreloading) {
+      if(!(data.length>0)&&!(preloadedData.length>0)){
+        setIsPreloading(false)
+      }
       return (
         <View style={styles.loadingContainer}>
           <Animated.View style={[
@@ -346,7 +353,10 @@ function MyWardrobe() {
     });
   return (
     <View style={Wardrobe.container}>
-      <View style={Wardrobe.categoryMenu}>
+      <View style={[
+        Wardrobe.categoryMenu,
+        selectedCategory && selectedCategory !== 'All' && Wardrobe.selectedCategoryMenu
+      ]}>
         {!selectedCategory || selectedCategory === 'All' ? (
           categories.map((category) => (
             <TouchableOpacity
@@ -718,10 +728,10 @@ const Wardrobe = StyleSheet.create({
   },
   categoryMenu: {
     width: '20%',
-    backgroundColor: '#B8AC9B',
+    backgroundColor: '#D0C5B4', // 修改為你想要的顏色
     paddingVertical: 10,
     paddingHorizontal: 5,
-  },
+},
   categoryItem: {
     paddingVertical: 15,
     paddingHorizontal: 10,
@@ -754,7 +764,7 @@ const Wardrobe = StyleSheet.create({
   subCategoryItem: {
     paddingVertical: 8,
     paddingHorizontal: 15,
-    backgroundColor: '#E8E8E8',
+    backgroundColor: '#B8AC9B',
     borderRadius: 15,
     marginRight: 10,
     alignSelf: 'flex-start',
@@ -762,7 +772,8 @@ const Wardrobe = StyleSheet.create({
     alignItems: 'center',
   },
   selectedSubCategoryItem: {
-    backgroundColor: '#f8f0e3',
+    backgroundColor: '#fff',
+    
   },
   subCategoryText: {
     fontSize: 14,
@@ -794,12 +805,12 @@ const Wardrobe = StyleSheet.create({
     paddingTop: 0,
   },
   selectedCategoryMenu: {
-    backgroundColor: '#a69579',
+    backgroundColor: '#D2B48C',
   },
   backButton: {
     paddingVertical: 10,
     paddingHorizontal: 10,
-    backgroundColor: '#E1DBD1',
+    backgroundColor: '#f8f0e3',
     alignItems: 'center',
     marginBottom: 10,
     borderRadius: 15,

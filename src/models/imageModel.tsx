@@ -30,7 +30,25 @@ class UserModel {
       throw error;
     }
   }
- 
+ async uploadModel(userModel){
+  try{
+    const modelUrl=await this.imageDAO.uploadModelsToDataBase(userModel)
+    return modelUrl ;
+  }
+  catch (error){
+      console.error('Error in Upload Model:', error);
+      throw error;
+  }
+ }
+ async getModelImage(){
+  try{
+    const got_Model=await this.imageDAO.getModelImageFromFirebase()
+    return got_Model;
+  }
+  catch(e){
+    console.log(e)
+  }
+ }
   // 可以添加其他与用户相关的业务逻辑方法...
 }
 

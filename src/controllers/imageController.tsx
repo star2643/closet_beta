@@ -170,8 +170,25 @@ function useImageController(model1) {
       throw error;
     }
   }
+  const uploadModel= async(uri:string)=>{
+    try {
+      console.log('success enter ')
+      const tmp=await imgModel.uploadModel(uri);
+
+    }
+    catch (error) {
+      console.error('Error upload img model:', error);
+      throw error;
+    }
+  }
+  const getModelImageFromFirebase=async()=>{
+    const final_got_Model=imgModel.getModelImage()
+    return final_got_Model;
+
+    
+  }
   return {
-    uploadImage,uploadImageToDatabase,listAll
+    uploadImage,uploadImageToDatabase,listAll,uploadModel,getModelImageFromFirebase
   };
   
 }

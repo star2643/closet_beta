@@ -50,7 +50,7 @@ class imageFirebaseDAO extends userDAO{
     }
    
   }
-  async updateImageId(imageIds) {
+  async updateUserImageId(imageIds) {
     let w;
     try {
       let w;
@@ -82,7 +82,7 @@ class imageFirebaseDAO extends userDAO{
         classes:classes
         
       }).then(() => console.log('Image Data updated.'));
-      this.updateImageId(imageIds)
+      this.updateUserImageId(imageIds)
     } catch (error) {
       console.error('Error fetching user data:', error);
       return null;
@@ -162,8 +162,52 @@ class imageFirebaseDAO extends userDAO{
       console.error("获取文件列表时出错:", error);
     }
   };
+  uploadModelsToDataBase= async (modelUrl) =>{
+    try {
+      // 使用 fetch 將文件讀取為 Blob
+      const response = await fetch(modelUrl);
+      const blob = await response.blob();
+      const uid=auth().currentUser?.uid;
+      // 設置 Firebase Storage 中的文件路徑和名稱
+      const fileName = `user/${uid}/models/model.jpg`;
+      const storageRef = storage().ref(fileName);
   
+      // 開始上傳
+      const task = storageRef.put(blob);
   
+      // 監控上傳進度
+      task.on('state_changed', taskSnapshot => {
+        console.log(`${taskSnapshot.bytesTransferred} transferred out of ${taskSnapshot.totalBytes}`);
+      });
+  
+      // 完成上傳並獲取下載 URL
+      await task;
+      const downloadURL = await storageRef.getDownloadURL();
+      console.log('File available at:', downloadURL);
+      return downloadURL;
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw error;
+    }
+  }
+  getModelImageFromFirebase = async () => {
+    try {
+      const uid=auth().currentUser?.uid;
+      const fileName = `user/${uid}/models/model.jpg`;
+      // 获取图片的下载 URL
+      const url = await storage().ref(fileName).getDownloadURL();
+      const response = await fetch(url);
+      console.log(url+"abcde")
+      if (!response.ok) {
+        return '';
+      }
+      // 返回下载 URL
+      return url;
+    } catch (error) {
+      console.error('Error getting image from Firebase:', error);
+      throw error;
+    }
+  };
   
   
   
