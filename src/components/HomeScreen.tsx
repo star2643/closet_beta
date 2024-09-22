@@ -1,12 +1,13 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { ScrollView, Text, View, Image, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
-
+import React, { useRef, useState, useEffect,useCallback } from 'react';
+import { ScrollView, Text, View, Image, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { useData } from '../services/DataContext'
 function HomeScreen() {
   const scrollViewRef = useRef(null);
   const [viewHeight, setViewHeight] = useState(0);
   const [currentDate, setCurrentDate] = useState('');
   const [selectedSection, setSelectedSection] = useState(1);
-
+  const{  }=useData
   useEffect(() => {
     const interval = setInterval(() => {
       const today = new Date();
@@ -85,9 +86,11 @@ function HomeScreen() {
           style={{ flex: 1 }}
         >
           <View style={styles.rectangle}>
+            <WeatherInfo />
             <View style={styles.dateContainer}>
               <Text style={styles.dateText}>{currentDate}</Text>
             </View>
+            
           </View>
           <View style={styles.rectangle}>
             <Text>Rectangle 2</Text>
@@ -156,10 +159,163 @@ function HomeScreen() {
     </View>
   );
 }
+const API_KEY = 'CWA-729AFB2B-4F3F-4C74-B63D-E37848253038';
+const LOCATION = '桃園市';
+
+function WeatherInfo() {
+  const [weatherData, setWeatherData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchWeatherData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(
+        `https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization=${API_KEY}&locationName=${encodeURIComponent(LOCATION)}`
+      );
+      const data = await response.json();
+      console.log(data)
+      setWeatherData(data);
+    } catch (err) {
+      setError('Failed to fetch weather data');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchWeatherData();
+    }, [fetchWeatherData])
+  );
+
+  const getCurrentWeatherInfo = () => {
+    if (!weatherData || !weatherData.records || !weatherData.records.location) {
+      return null;
+    }
+
+    const location = weatherData.records.location[0];
+    const currentTime = new Date();
+
+    const weatherElements = {};
+    location.weatherElement.forEach(element => {
+      // 找出最早的 startTime
+      const earliestTimeInfo = element.time.reduce((earliest, timeInfo) => {
+        const startTime = new Date(timeInfo.startTime);
+        return startTime < new Date(earliest.startTime) ? timeInfo : earliest;
+      }, element.time[0]);
+
+      // 如果 currentTime 小於最早的 startTime，使用最早的時間區間
+      const relevantTimeInfo = currentTime < new Date(earliestTimeInfo.startTime)
+        ? earliestTimeInfo
+        : element.time.find(timeInfo => {
+            const startTime = new Date(timeInfo.startTime);
+            const endTime = new Date(timeInfo.endTime);
+            return currentTime >= startTime && currentTime <= endTime;
+          }) || earliestTimeInfo; // 如果找不到符合的時間區間，使用最早的
+
+      weatherElements[element.elementName] = relevantTimeInfo.parameter;
+    });
+
+    return weatherElements;
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.weatherContainer}>
+        <ActivityIndicator size="large" color="#D2B48C" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.weatherContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
+  const currentWeather = getCurrentWeatherInfo();
+
+  if (!currentWeather) {
+    return (
+      <View style={styles.weatherContainer}>
+        <Text style={styles.errorText}>No weather data available</Text>
+      </View>
+    );
+  }
+  
+  return (
+    <View style={styles.weatherContainer}>
+      <Text style={styles.weatherTitle}>今日天氣</Text>
+      <Text style={styles.weatherMain}>{currentWeather.Wx.parameterName}</Text>
+      <View style={styles.tempContainer}>
+        <Text style={styles.tempText}>{currentWeather.MaxT.parameterName}°C</Text>
+        <Text style={styles.tempSeparator}> / </Text>
+        <Text style={styles.tempText}>{currentWeather.MinT.parameterName}°C</Text>
+      </View>
+      <Text style={styles.rainChance}>降雨機率：{currentWeather.PoP.parameterName}%</Text>
+    </View>
+  );
+}
 
 const screenWidth = Dimensions.get('window').width;
 
 const styles = StyleSheet.create({
+  weatherContainer: {
+    position: 'absolute',
+    right: 10,  // 改為 right
+    top: 10,
+    width: 150,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    padding: 15,
+    borderRadius: 15,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  weatherTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4a4a4a',
+    marginBottom: 5,
+  },
+  weatherMain: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 5,
+  },
+  tempContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  tempText: {
+    fontSize: 18,
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  tempSeparator: {
+    fontSize: 18,
+    color: '#666',
+  },
+  rainChance: {
+    fontSize: 14,
+    color: '#4a4a4a',
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 14,
+    textAlign: 'center',
+  },
   container: {
     flex: 9,
     backgroundColor: '#F5F5F5',
@@ -203,18 +359,28 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   dateContainer: {
-    width: 110,
-    height: 110,
-    backgroundColor: '#e1dbd1',
+    width: '50%',
+    height: 50,
+    backgroundColor: 'rgba(225, 219, 209, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: 15,
     position: 'absolute',
-    right: 10,
+    left: 10,  // 改為 left
+    top: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   dateText: {
     fontSize: 20,
-    color: '#fff',
+    color: '#4a4a4a',
+    fontWeight: 'bold',
   },
   rectangle: {
     height: '95%',

@@ -5,6 +5,21 @@ import { BlurView } from '@react-native-community/blur';
 import axios from 'axios';
 import RNFS from 'react-native-fs';
 import { useData } from '../services/DataContext'
+
+interface InputData {
+  top_garment_url: string;
+  person_image_url: string;
+  bottom_garment_url?: string; // 使用可选属性
+}
+
+interface AitryonData {
+  model: string;
+  input: InputData;
+  parameters: {
+    resolution: number;
+    restore_face: boolean;
+  };
+}
 // AIdressing 组件定义
 function AIdressing() {
   const handlePress = (type) => {
@@ -42,7 +57,7 @@ function AIdressing() {
   const [isExpanded, setIsExpanded] = useState(false); // 控制彈出框的狀態
   const modelPosition = useRef(new Animated.Value(0)).current;
   const expansionWidth = useRef(new Animated.Value(0)).current;
-  const topClothing = useMemo(() => data.filter(item => item.classes.includes('上裝')), [data]);
+  const topClothing = useMemo(() => data.filter(item => item.classes.includes('上裝') || item.classes.includes('連身')), [data]);
   const bottomClothing = useMemo(() => data.filter(item => item.classes.includes('下裝')), [data]);
   const [selectedTop, setSelectedTop] = useState(null);
   const [selectedBottom, setSelectedBottom] = useState(null);
@@ -66,7 +81,7 @@ function AIdressing() {
   }, [modelImage]);
   useEffect(() => {
     
-    if (resultUrl.top && resultUrl.bottom && resultUrl.people && accessToApi) {
+    if (resultUrl.top && resultUrl.people && accessToApi) {
       submitImageSynthesisTask();
     }
   }, [resultUrl]);
@@ -103,7 +118,13 @@ function AIdressing() {
       const base64Image = await convertToBase64(imagesUrl[title[i]]);
       console.log(base64Image)
       if (!base64Image) {
+        if(title[i]=='bottom'){
+          Tmpresult_url.push('')
+          continue
+        }
+        else{
         throw new Error(`Failed to convert image to base64: ${title[i]}`);
+        }
       }
       const formData = new FormData();
       formData.append('key', apiKey);
@@ -232,18 +253,21 @@ function AIdressing() {
       "Authorization": "sk-c08abee2ece5482aa843a8737d23294e",  // 替换为你的 API Key
       "X-DashScope-Async": "enable"
     };
-    const data = {
-      "model": "aitryon",
-      "input": {
-        "top_garment_url": resultUrl['top'],
-        "bottom_garment_url": resultUrl['bottom'],
-        "person_image_url": resultUrl['people']
+    
+    const data: AitryonData = {
+      model: "aitryon",
+      input: {
+        top_garment_url: resultUrl.top,
+        person_image_url: resultUrl.people
       },
-      "parameters": {
-        "resolution": -1,
-        "restore_face": true
+      parameters: {
+        resolution: -1,
+        restore_face: true
       }
     };
+    if (resultUrl.bottom?.trim()) {
+      data.input.bottom_garment_url = resultUrl.bottom;
+    }
     for(let i=0;i<10;i++){
       try {
         const response = await axios.post(apiUrl, data, { headers });
@@ -277,6 +301,7 @@ function AIdressing() {
       
     } catch (error) {
       Alert.alert('錯誤', '獲取或上傳圖片時發生錯誤');
+      console.log(error)
       setaccessToApi(false)
     } finally {
       setIsAPILoading(false);

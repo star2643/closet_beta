@@ -204,7 +204,6 @@ function MyWardrobe() {
       if (prevItems.includes(item)) {
         // 如果已经选中，取消选中
         const updatedItems = prevItems.filter(i => i !== item);
-        const insertIndex = originalOptions.current.indexOf(item);
         if(updatedItems.length+items.length<9){
           setItems((prevItems) => {
             return [...prevItems,item]
@@ -213,7 +212,6 @@ function MyWardrobe() {
         // 防止重复添加到 moreOptions 中
         else if (!moreOptions.includes(item)&&!items.includes(item)) {
           const updatedOptions = [...moreOptions];
-          updatedOptions.splice(insertIndex, 0, item); // 恢复原始顺序
           setMoreOptions(updatedOptions);
         }
   
@@ -546,7 +544,7 @@ function MyWardrobe() {
               
             )}
             {loading && (
-                    <View style={styles.loadingContainer}>
+                    <View style={styles.loadingContainer2}>
                       <ActivityIndicator size="large" color="#0000ff" />
                     </View>
                   )}
@@ -610,6 +608,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
+  loadingContainer2: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   loadingContent: {
     backgroundColor: 'white',
     padding: 20,
@@ -648,7 +650,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',        // 自动换行
     justifyContent: 'space-between', // 均匀分布
     padding: 10,
-    borderWidth: 2,
   },
   roundButton: {
     width: 64,            // 按钮宽度，确保两列显示
@@ -942,7 +943,7 @@ const Wardrobe = StyleSheet.create({
     fontSize: 14,
   },buttonText2: {
     color: '#B8AC9B',
-    fontSize: 12,
+    fontSize: 10,
   },scrollViewContent: {
     flexGrow: 1,
     justifyContent: 'center',

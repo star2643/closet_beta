@@ -5,9 +5,10 @@ import UserProfileController from '../controllers/userProfileController'
 import { useAuth } from '../services/AuthContext'; 
 import { useNavigation } from '@react-navigation/native';
 import { useData } from '../services/DataContext'
+const defaultProfilePic = require('../assets/Images/user.png');
 function Member() {
   const { uploadModel,setModelImage,getModelImageFromFirebase ,modelImage} = useData();
-  const [profilePic, setProfilePic] = useState('https://via.placeholder.com/80');
+  const [profilePic, setProfilePic] = useState(defaultProfilePic);
   const [User,setUser]=useState();
   const { user, signOut } = useAuth();
   const navigation = useNavigation();
@@ -51,6 +52,7 @@ function Member() {
         mediaType: 'photo',
         includeBase64: false,
         includeExtra: true,
+        quality:0.8
       },
       (response) => {
         if (response.didCancel) {
@@ -96,11 +98,10 @@ function Member() {
     <Image source={require('../assets/Images/login.jpg')} style={styles.backgroundImage} />
     <View style={styles.contentContainer}>
       <View style={styles.profileContainer}>
-        <TouchableOpacity onPress={handleImagePicker}>
+        <TouchableOpacity onPress={()=>handleImagePicker()} >
           <Image 
-            source={{ uri: profilePic }} 
+            source={require('../assets/Images/user.png')} 
             style={styles.profilePic} 
-            onError={() => setProfilePic('https://via.placeholder.com/80')} 
           />
         </TouchableOpacity>
         <Text style={styles.userName}>{User}</Text>
@@ -210,6 +211,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     borderWidth: 3,
     borderColor: '#D2B48C',
+    backgroundColor:'rgba(255,255,255,1)'
   },
   userName: {
     marginTop: 10,
