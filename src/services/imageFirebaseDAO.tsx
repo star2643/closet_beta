@@ -50,8 +50,25 @@ class imageFirebaseDAO extends userDAO{
     }
    
   }
-  async updateUserImageId(imageIds) {
+  async updateUserImageId(imageIds,classes:string[]) {
     let w;
+    const contains1 = classes.includes('上裝');
+    const contains2 = classes.includes('下裝');
+    const contains3 = classes.includes('連身');
+    const contains4 = classes.includes('外套');
+    const update_num=[0,0,0,0]
+    if(contains1){
+      update_num[0]+=1
+    }
+    if(contains2){
+      update_num[1]+=1
+    }
+    if(contains3){
+      update_num[2]+=1
+    }
+    if(contains4){
+      update_num[3]+=1
+    }
     try {
       let w;
       const uid=auth().currentUser?.uid;
@@ -60,7 +77,10 @@ class imageFirebaseDAO extends userDAO{
       .update({
         current_clothe_number:parseInt(imageIds.current_clothe_number, 10)+1,
         total_clothe_number:parseInt(imageIds.total_clothe_number,10)+1,
-        
+        top_number:imageIds.top_number+update_num[0],
+        bottom_number:imageIds.bottom_number+update_num[1],
+        onepiece_number:imageIds.onepiece_number+update_num[2],
+        jacket_number:imageIds.jacket_number+update_num[3]
       }).then(() => console.log('Data updated..'));
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -82,7 +102,7 @@ class imageFirebaseDAO extends userDAO{
         classes:classes
         
       }).then(() => console.log('Image Data updated.'));
-      this.updateUserImageId(imageIds)
+      this.updateUserImageId(imageIds,classes)
     } catch (error) {
       console.error('Error fetching user data:', error);
       return null;
@@ -208,9 +228,94 @@ class imageFirebaseDAO extends userDAO{
       throw error;
     }
   };
+  processLoveOutfit =async(outfit,processType,outfitId)=>{
+    const uid=auth().currentUser?.uid;
+    const imageIds=await this.getImageNum()
+    if(processType===1){ //新增穿搭收藏
+      try {
+        console.log(outfit)
+        database()
+        .ref('/loveOutfit/'+uid+'/'+(imageIds.loveOutfitSerialNum+1))
+        .update({
+          top:outfit.top,
+          bottom:outfit.bottom
+        }).then(() => console.log('love outfit updated.'));
+        const currentId=parseInt(imageIds.loveOutfitSerialNum)+1;
+        this.updateLoveOutfitId(imageIds)
+        return currentId;
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        return null;
+      }
+    }
+    else if(processType===2&&outfitId){ //刪除收藏
+      database()
+      .ref(`/loveOutfit/${uid}/${outfitId}`)
+      .remove()
+      .then(() => {
+        console.log(`Outfit with id ${outfitId} has been removed successfully.`);
+        this.minusLoveOutfitNum(imageIds)
+        return outfitId;
+      })
+      .catch((error) => {
+        console.error("Error removing outfit:", error);
+        return null;
+      });
+    }
+  }
+  getLoveOutfitlist =async () => {
+    const uid=auth().currentUser?.uid;
+    return database()
+      .ref('/loveOutfit/' + uid)
+      .once('value')
+      .then((snapshot) => {
+        const outfits = snapshot.val();
+        if (!outfits) return [];
   
-  
-  
+        return Object.entries(outfits).map(([key, value]) => ({
+          id: key,
+          top: value.top,
+          bottom: value.bottom
+        }));
+      })
+      .catch((error) => {
+        console.error("Error fetching love outfits:", error);
+        return [];
+      });
+  };
+  async updateLoveOutfitId(imageIds) {
+    
+    try {
+      let w;
+      const uid=auth().currentUser?.uid;
+      database()
+      .ref('/users/'+uid)
+      .update({
+        loveOutfitNum:parseInt(imageIds.loveOutfitNum)+1,
+        loveOutfitSerialNum:parseInt(imageIds.loveOutfitSerialNum)+1
+      }).then(() => console.log('Love Data updated..'));
+    } catch (error) {
+      console.error('Error Love Outfit data:', error);
+      return null;
+    }
+   
+  }
+  async minusLoveOutfitNum(imageIds) {
+    
+    try {
+      let w;
+      const uid=auth().currentUser?.uid;
+      database()
+      .ref('/users/'+uid)
+      .update({
+        loveOutfitNum:parseInt(imageIds.loveOutfitNum)-1,
+      }).then(() => console.log('Love Data updated..'));
+    } catch (error) {
+      console.error('Error Love Outfit data:', error);
+      return null;
+    }
+   
+  }
 }
 
 

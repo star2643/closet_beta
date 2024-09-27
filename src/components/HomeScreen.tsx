@@ -1,13 +1,54 @@
 import React, { useRef, useState, useEffect,useCallback } from 'react';
 import { ScrollView, Text, View, Image, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { useData } from '../services/DataContext'
+import { useAuth } from '../services/AuthContext';
+import DataDisplayGrid from './DataDisplayGrid';
+import OutfitSuggestion from './OutfitSuggestion';
+import { useNavigation } from '@react-navigation/native';
+import { useData } from '../services/DataContext';
+import LoveDataPreview from './LoveDataDisplay';
 function HomeScreen() {
   const scrollViewRef = useRef(null);
   const [viewHeight, setViewHeight] = useState(0);
   const [currentDate, setCurrentDate] = useState('');
   const [selectedSection, setSelectedSection] = useState(1);
-  const{  }=useData
+  const { getClotheNumber } = useAuth();
+  const [selectedOutfit, setSelectedOutfit] = useState(null);
+  const {loveData,data} = useData();
+  const navigation = useNavigation();
+  const handleShowMore = () => {
+     // 導航到收藏穿搭的完整列表頁面
+  };
+  const handleOutfitSelect = useCallback((outfit) => {
+    console.log('handleOutfitSelect called with:', outfit);
+    setSelectedOutfit(outfit);
+    navigation.navigate('智慧穿搭', { selectedOutfit: outfit });
+  }, []);
+  
+
+  console.log('HomeScreen render, handleOutfitSelect:', handleOutfitSelect);
+  const [clotheAllNum, setclotheAllNum] = useState({
+    total_clothe_number: 0,
+    top_number: 0,
+    bottom_number: 0,
+    onepiece_number: 0,
+    jacket_number: 0
+  });
+  const [statisticsData, setstatisticsData] = useState([
+    { title: '上裝數量', value: 0 },
+    { title: '下裝數量', value: 0 },
+    { title: '連身數量', value: 0 },
+    { title: '外套數量', value: 0 },
+  ]);
+
+  const updateValue = useCallback((title, newValue) => {
+    setstatisticsData(prevData =>
+      prevData.map(item =>
+        item.title === title ? { ...item, value: newValue } : item
+      )
+    );
+  }, []);
+
   useEffect(() => {
     const interval = setInterval(() => {
       const today = new Date();
@@ -18,6 +59,33 @@ function HomeScreen() {
     return () => clearInterval(interval);
   }, []);
 
+  const isMountedRef = useRef(false);
+  const fetchClothingNumbers = useCallback(async () => {
+    try {
+      const tmp_dict = await getClotheNumber();
+      setclotheAllNum(tmp_dict);
+      updateValue('上裝數量', tmp_dict.top_number);
+      updateValue('下裝數量', tmp_dict.bottom_number);
+      updateValue('連身數量', tmp_dict.onepiece_number);
+      updateValue('外套數量', tmp_dict.jacket_number);
+      console.log(tmp_dict);
+      console.log("數據已更新");
+    } catch (error) {
+      console.error("Error fetching clothe number:", error);
+    }
+  }, [getClotheNumber, updateValue]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchClothingNumbers();
+      return () => {
+        console.log('頁面失去焦點了！');
+        // 在這裡你可以執行清理操作
+      };
+    }, [fetchClothingNumbers])
+  );
+  useEffect(() => {
+    console.log('loveData updated:', loveData);
+  }, [loveData]);
   const sectionRefs = {
     1: useRef(null),
     2: useRef(null),
@@ -44,20 +112,16 @@ function HomeScreen() {
     return sectionHeights.length;
   };
 
-  // 使用 setTimeout 延遲狀態更新，避免按鈕之間的飄移問題
   const scrollToSection = (id) => {
     const targetRef = sectionRefs[id].current;
     if (targetRef) {
       targetRef.measureLayout(
         scrollViewRef.current,
         (x, y) => {
-          // 滾動到對應的區塊
           scrollViewRef.current.scrollTo({ y, animated: true });
-
-          // 延遲狀態更新，確保滾動完成後再更新底線狀態
           setTimeout(() => {
             setSelectedSection(id);
-          }, 300); // 延遲 300ms
+          }, 300);
         },
         (error) => {
           console.error(error);
@@ -141,17 +205,21 @@ function HomeScreen() {
         >
           <View ref={sectionRefs[1]} style={[{ height: viewHeight }]}>
             <View ref={sectionRefs[1]} style={[styles.section, { margin: 10 }]}>
-              <Text style={styles.sectionText}>This is Section 1</Text>
+            <OutfitSuggestion onOutfitSelect={handleOutfitSelect} />
             </View>
           </View>
           <View ref={sectionRefs[2]} style={[{ height: viewHeight }]}>
             <View ref={sectionRefs[2]} style={[styles.section, { margin: 10 }]}>
-              <Text style={styles.sectionText}>This is Section 2</Text>
+              <DataDisplayGrid data={statisticsData} />
             </View>
           </View>
           <View ref={sectionRefs[3]} style={[{ height: viewHeight }]}>
             <View ref={sectionRefs[3]} style={[styles.section, { margin: 10 }]}>
-              <Text style={styles.sectionText}>This is Section 3</Text>
+            <LoveDataPreview 
+                loveData={loveData} 
+                onShowMore={handleShowMore}
+                previewCount={3} // 顯示前3個收藏的穿搭
+              />
             </View>
           </View>
         </ScrollView>
@@ -348,6 +416,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#D0C5B4',
+    borderRadius: 20,
+    margin: 10,
   },
   sectionText: {
     fontSize: 18,

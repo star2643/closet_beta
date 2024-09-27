@@ -182,13 +182,21 @@ function useImageController(model1) {
     }
   }
   const getModelImageFromFirebase=async()=>{
-    const final_got_Model=imgModel.getModelImage()
+    const final_got_Model=await imgModel.getModelImage()
     return final_got_Model;
 
     
   }
+  const getLoveList=async ()=>{
+    const final_got_loveList=await imgModel.getLoveOutfitlist()
+    return final_got_loveList;
+  }
+  const processLoveOutfit=async (outfit,processType,outfitId):Promise<number|null|undefined> =>{
+    const finalresult=await imgModel.processLoveOutfit(outfit,processType,outfitId)
+    return finalresult;
+  }
   return {
-    uploadImage,uploadImageToDatabase,listAll,uploadModel,getModelImageFromFirebase
+    uploadImage,uploadImageToDatabase,listAll,uploadModel,getModelImageFromFirebase,getLoveList,processLoveOutfit
   };
   
 }

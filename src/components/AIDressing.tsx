@@ -5,7 +5,8 @@ import { BlurView } from '@react-native-community/blur';
 import axios from 'axios';
 import RNFS from 'react-native-fs';
 import { useData } from '../services/DataContext'
-
+import { useRoute } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 interface InputData {
   top_garment_url: string;
   person_image_url: string;
@@ -26,6 +27,7 @@ function AIdressing() {
     Alert.alert(`${type}穿搭建議`);
   };
   
+
   const RenderButtons = () => (
     <View style={AI.buttonContainer}>
       <TouchableOpacity 
@@ -62,6 +64,41 @@ function AIdressing() {
   const [selectedTop, setSelectedTop] = useState(null);
   const [selectedBottom, setSelectedBottom] = useState(null);
   const [accessToApi,setaccessToApi]=useState(false)
+  const route = useRoute();
+  const { selectedOutfit } = route.params || {};  // 獲取傳遞的參數
+  const [autoProcess,setAutoProcess]=useState(false);
+  useEffect(() => {
+    const updateImagesAndUpload = () => {
+      if (selectedOutfit) {
+        // 重置 resultUrl，确保新的操作开始前状态清空
+        setResultUrl({ top: '', bottom: '', people: '' });
+        
+        // 更新 imagesUrl 并在完成更新后执行 uploadDirectly
+        setImageUrl(prevState => {
+          const newState = {
+            ...prevState,
+            top: selectedOutfit.top,
+            bottom: selectedOutfit.bottom ? selectedOutfit.bottom : null,
+          };
+          
+          return newState; // 返回更新后的状态
+        });
+        setAutoProcess(true)
+      }
+    };
+  
+    updateImagesAndUpload(); // 当 selectedOutfit 改变时，调用此函数
+  }, [selectedOutfit]);
+  useEffect(() => {
+    const handleUpload = async () => {
+      if (autoProcess) {
+        await uploadDirectly();  // 确保异步操作执行完成
+        setAutoProcess(false);   // 上传完成后将 `autoProcess` 设置为 false
+      }
+    };
+  
+    handleUpload();  // 调用异步函数
+  }, [autoProcess]);
   const updateimagesUrl = (type, url) => {
     setImageUrl(prevState => ({
       ...prevState,
@@ -86,6 +123,8 @@ function AIdressing() {
     }
   }, [resultUrl]);
   const convertToBase64 = async (filePath) => {
+    if(!filePath)
+      return filePath
     if (filePath.startsWith('file:')) {
       try {
         // 移除 "file://" 前綴，因為 RNFS.readFile 在某些平台上可能不需要它
@@ -115,6 +154,7 @@ function AIdressing() {
     
     const Tmpresult_url=[]
     for(let i=0;i<3;i++){
+      console.log(imagesUrl[title[i]]+" is processing")
       const base64Image = await convertToBase64(imagesUrl[title[i]]);
       console.log(base64Image)
       if (!base64Image) {
@@ -285,9 +325,7 @@ function AIdressing() {
         console.error("任務提交失敗:", error);
       } 
     }
-    if(!taskId){
-      setIsAPILoading(false);
-    }
+    
     setResultUrl({ top: '', bottom: '' ,people:''})
 
   };
@@ -300,7 +338,7 @@ function AIdressing() {
       await uploadToFreeimage(imagesUrl);
       
     } catch (error) {
-      Alert.alert('錯誤', '獲取或上傳圖片時發生錯誤');
+      Alert.alert('錯誤'+error);
       console.log(error)
       setaccessToApi(false)
     } finally {

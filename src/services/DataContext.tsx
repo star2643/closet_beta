@@ -7,11 +7,16 @@ type DataItem = {
   url: string;
   classes: string[];
 };
-
+type LoveOutfit = {
+  id: string;
+  top: string;
+  bottom: string;
+};
 type DataContextType = {
   data: DataItem[];
-  
+  loveData:LoveOutfit[];
   setData: Dispatch<SetStateAction<DataItem[]>>;
+  setloveData:Dispatch<SetStateAction<LoveOutfit[]>>;
   isLoading: boolean;
   uploadImage: (() => Promise<any>) | null;
   uploadImageToDatabase: ((uri: string, labels: string[]) => Promise<void>) | null;
@@ -19,7 +24,8 @@ type DataContextType = {
   getModelImageFromFirebase: (() => Promise<string | undefined>) | null;
   modelImage: string | null;
   setModelImage: Dispatch<SetStateAction<string | null>>;
-
+  getLoveList: (() => Promise<{ id: string; top: any; bottom: any; }[] | undefined>) | null;
+  processLoveOutfit: ((outfit: { top: string; bottom: string; }, processType: number, outfitId: number) => Promise<number|null|undefined>) | null;
 };
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -30,6 +36,7 @@ type DataProviderProps = {
 
 export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const [data, setData] = useState<DataItem[]>([]);
+  const [loveData,setloveData]= useState<LoveOutfit[]>([]);
   const [modelImage, setModelImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [uploadImage, setUploadImage] = useState<(() => Promise<any>) | null>(null);
@@ -37,8 +44,8 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const [uploadModel, setUploadModel] = useState<((uri: string) => Promise<any>) | null>(null); // 新增的 state
   const model1 = useTensorflowModel(require('../assets/major1.tflite'));
   const [getModelImageFromFirebase, setGetModelImageFromFirebase] = useState<(() => Promise<string | undefined>) | null>(null);
-
-
+  const [getLoveList, setGetLoveList] = useState<(() => Promise<{ id: string; top: any; bottom: any; }[] | undefined>) | null>(null);
+  const [processLoveOutfit, setprocessLoveOutfit] = useState<((outfit: any, processType: any, outfitId: any) => Promise<number|null|undefined>) | null>(null);
   useEffect(() => {
     const initializeController = async () => {
       if (model1) {
@@ -47,21 +54,31 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
         setUploadImageToDatabase(() => imgController.uploadImageToDatabase as (uri: string, labels: string[]) => Promise<void>);
         setUploadModel(() => imgController.uploadModel); // 設置 uploadModel 方法
         setGetModelImageFromFirebase(() => imgController.getModelImageFromFirebase);
-        
+        setGetLoveList(imgController.getLoveList);
+        setprocessLoveOutfit(()=>imgController.processLoveOutfit)
         try {
           const result = await imgController.listAll();
+          
           console.log(result)
           setData(result);
           if (imgController.getModelImageFromFirebase) {
             const modelImageUrl = await imgController.getModelImageFromFirebase();
             if(modelImageUrl!='')
-              setModelImage(modelImageUrl||null);
+            setModelImage(modelImageUrl||null);
           }
         } catch (error) {
           console.error("Error loading data:", error);
-        } finally {
-          setIsLoading(false);
+        } 
+        try{
+          const loveResult=await imgController.getLoveList();
+          if(loveResult){
+            setloveData(loveResult)
+          }
         }
+        catch(error){
+          console.error("Error loading Love data:", error);
+        }
+        setIsLoading(false);
       }
     };
 
@@ -69,7 +86,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   }, [model1]);
 
   return (
-    <DataContext.Provider value={{ data, setData, isLoading, uploadImage, uploadImageToDatabase, uploadModel,modelImage,setModelImage,getModelImageFromFirebase  }}>
+    <DataContext.Provider value={{ data, setData, isLoading, uploadImage, uploadImageToDatabase, uploadModel,modelImage,setModelImage,getModelImageFromFirebase,getLoveList,loveData,setloveData,processLoveOutfit  }}>
       {children}
     </DataContext.Provider>
   );

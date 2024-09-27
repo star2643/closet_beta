@@ -49,7 +49,26 @@ class UserModel {
     console.log(e)
   }
  }
-  // 可以添加其他与用户相关的业务逻辑方法...
+ async getLoveOutfitlist(){
+    try{
+      const got_LoveList=await this.imageDAO.getLoveOutfitlist()
+      return got_LoveList
+    }
+    catch(error){
+      
+    }
+
+ }
+ async processLoveOutfit(outfit,processType,outfitId){
+  try{
+    const processResult=await this.imageDAO.processLoveOutfit(outfit,processType,outfitId)
+    return processResult
+  }
+  catch(error){
+    
+  }
+
+ }// 可以添加其他与用户相关的业务逻辑方法...
 }
 
 export default UserModel;

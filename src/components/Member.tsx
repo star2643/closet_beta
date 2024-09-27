@@ -18,10 +18,7 @@ function Member() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' as never }],
-      });
+      
     } catch (error) {
       console.error('登出失敗:', error);
     }
