@@ -1,12 +1,14 @@
 
 import React, { useState, useEffect, useCallback, useRef,useMemo } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView, ImageBackground, StyleSheet, Dimensions, Alert, Animated, FlatList,ActivityIndicator  } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView, ImageBackground, StyleSheet, Dimensions, Alert, Animated, FlatList,ActivityIndicator, Modal  } from 'react-native';
 import { BlurView } from '@react-native-community/blur';
 import axios from 'axios';
 import RNFS from 'react-native-fs';
 import { useData } from '../services/DataContext'
 import { useRoute } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
+import uploadToCloudinary from '../services/uploadToCloudinary';
+import OutfitRecommender from './OutfitRecommender';
 interface InputData {
   top_garment_url: string;
   person_image_url: string;
@@ -23,6 +25,8 @@ interface AitryonData {
 }
 // AIdressing 组件定义
 function AIdressing() {
+
+  
   const handlePress = (type) => {
     Alert.alert(`${type}穿搭建議`);
   };
@@ -30,21 +34,18 @@ function AIdressing() {
 
   const RenderButtons = () => (
     <View style={AI.buttonContainer}>
+      
       <TouchableOpacity 
-        style={AI.button} >
-        
-          <Text style={AI.buttonText}>休閒</Text>
-        
+        style={AI.button} 
+        onPress={handleOpenRecommender}
+      >
+        <Text style={AI.buttonText}>獲取搭配建議</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={AI.button} onPress={() => handlePress('正式')}>
-        <Text style={AI.buttonText}>正式</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={AI.button} onPress={() => handlePress('運動')}>
-        <Text style={AI.buttonText}>運動</Text>
-      </TouchableOpacity>
+      
     </View>
   );
-  
+  const [isRecommenderVisible, setIsRecommenderVisible] = useState(false);
+  const [selectedClothing, setSelectedClothing] = useState([]); 
   const [imagesUrl, setImageUrl] = useState({top:'',bottom:'',people:''});
   const [isAPILoading, setIsAPILoading] = useState(false);
   const [resultUrl, setResultUrl] = useState({ top: '', bottom: '' ,people:''});
@@ -67,6 +68,28 @@ function AIdressing() {
   const route = useRoute();
   const { selectedOutfit } = route.params || {};  // 獲取傳遞的參數
   const [autoProcess,setAutoProcess]=useState(false);
+  const [hasRecommended, setHasRecommended] = useState(false);
+  const [recommendation, setRecommendation] = useState(null);
+  
+
+  const handleOpenRecommender = () => {
+    // 從 topClothing 和 bottomClothing 中獲取所有 URL
+    const allClothingUrls = [...topClothing, ...bottomClothing].map(item => item.url);
+    setSelectedClothing(allClothingUrls);
+    setIsRecommenderVisible(true);
+  };
+  
+  const handleCloseRecommender = () => {
+    setIsRecommenderVisible(false);
+  };
+  
+  const handleRecommendationComplete = (result) => {
+    console.log('搭配推薦完成:', result);
+    setHasRecommended(true);
+    setRecommendation(result)
+    // 這裡可以處理推薦結果，例如更新選中的衣物等
+  };
+
   useEffect(() => {
     const updateImagesAndUpload = () => {
       if (selectedOutfit) {
@@ -172,19 +195,15 @@ function AIdressing() {
       formData.append('format', 'json');
 
       try {
-        const response = await axios.post(apiUrl, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
+        const tmpurl = await uploadToCloudinary(base64Image);
 
-        if (response.data && response.data.image && response.data.image.url) {
-          Tmpresult_url.push(response.data.image.url)
+        if (tmpurl) {
+          Tmpresult_url.push(tmpurl)
               
               
             
           
-          console.log(title[i],':',response.data.image.url);
+          console.log(title[i],':',tmpurl);
 
         } else {
           console.log('Unexpected API1 response:', response.data);
@@ -400,7 +419,7 @@ function AIdressing() {
       checkTaskStatus();
       
       // 然后每3秒执行一次
-      intervalId = setInterval(checkTaskStatus, 3000);
+      intervalId = setInterval(checkTaskStatus, 6000);
     }
 
     // 清理函数
@@ -521,6 +540,35 @@ function AIdressing() {
           </TouchableOpacity>
         )}
       </View>
+      <Modal
+        visible={isRecommenderVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleCloseRecommender}
+      >
+        <View style={AI.modalContainer}>
+          <View style={AI.modalContent}>
+            <TouchableOpacity 
+              style={AI.modalCloseButton}
+              onPress={handleCloseRecommender}
+            >
+              <Text style={AI.modalCloseButtonText}>✕</Text>
+            </TouchableOpacity>
+            
+            <OutfitRecommender
+              hasRecommended={hasRecommended}
+              setHasRecommended={setHasRecommended}
+              recommendation={recommendation}
+              setRecommendation={setRecommendation}
+              apiKey="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"
+              clothingUrls={selectedClothing}
+              onClose={handleCloseRecommender}
+              onRecommendationComplete={handleRecommendationComplete}
+              onError={(error) => console.error('推薦錯誤:', error)}
+            />
+          </View>
+        </View>
+      </Modal>
     </ImageBackground>
     // <ImageBackground 
     //   source={require('../assets/Images/back.jpg')} 
@@ -771,6 +819,42 @@ const AI = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.7, // 使按鈕在禁用時看起來稍微不同
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    height: '80%',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    position: 'relative',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    right: 10,
+    top: 10,
+    zIndex: 1,
+    padding: 10,
+  },
+  modalCloseButtonText: {
+    fontSize: 24,
+    color: '#666',
+  },
+  recommendButton: {
+    backgroundColor: '#2196F3',
+    padding: 10,
+    borderRadius: 5,
+    marginVertical: 10,
+  },
+  recommendButtonText: {
+    color: 'white',
+    textAlign: 'center',
+    fontSize: 16,
   },
 });
 

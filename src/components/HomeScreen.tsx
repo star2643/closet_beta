@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect,useCallback } from 'react';
-import { ScrollView, Text, View, Image, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { ScrollView, Text, View, Image, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator,Modal  } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../services/AuthContext';
 import DataDisplayGrid from './DataDisplayGrid';
@@ -7,6 +7,8 @@ import OutfitSuggestion from './OutfitSuggestion';
 import { useNavigation } from '@react-navigation/native';
 import { useData } from '../services/DataContext';
 import LoveDataPreview from './LoveDataDisplay';
+import { Sun, Cloud, CloudRain, Umbrella, Calendar, Activity, Shirt } from 'lucide-react';
+import OutfitDetailModal from './OutfitDisplay';
 function HomeScreen() {
   const scrollViewRef = useRef(null);
   const [viewHeight, setViewHeight] = useState(0);
@@ -16,6 +18,7 @@ function HomeScreen() {
   const [selectedOutfit, setSelectedOutfit] = useState(null);
   const {loveData,data} = useData();
   const navigation = useNavigation();
+  const [outfitModalVisible, setOutfitModalVisible] = useState(false);
   const handleShowMore = () => {
      // 導航到收藏穿搭的完整列表頁面
   };
@@ -52,7 +55,7 @@ function HomeScreen() {
   useEffect(() => {
     const interval = setInterval(() => {
       const today = new Date();
-      const Day = { day: 'numeric', month: 'short' };
+      const Day = { day: 'numeric', month: 'short',year:'numeric' };
       const dateString = today.toLocaleDateString('en-US', Day);
       setCurrentDate(dateString);
     }, 1000);
@@ -132,17 +135,8 @@ function HomeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f8f0e3' }}>
-      <View style={{ flex: 1 }}>
-        <View style={additionalStyles.rectangle}>
-          <View style={additionalStyles.row}>
-            <Image
-              source={require('../assets/Images/logo.png')}
-              style={additionalStyles.image}
-            />
-          </View>
-        </View>
-      </View>
-      <View style={{ flex: 3 }}>
+      
+      <View style={{ height:'25%' }}>
         <ScrollView
           horizontal
           pagingEnabled
@@ -150,11 +144,17 @@ function HomeScreen() {
           style={{ flex: 1 }}
         >
           <View style={styles.rectangle}>
-            <WeatherInfo />
+            <View style={{width:'50%'}}>
             <View style={styles.dateContainer}>
               <Text style={styles.dateText}>{currentDate}</Text>
             </View>
-            
+            <View style={{marginLeft:25}}>
+            <Text style={{fontSize:28,fontWeight:'bold',color:'rgba(200,180,154,1)'}}>您好，</Text>
+            <Text style={{fontSize:4,fontWeight:'bold',color:'rgba(200,180,154,1)'}}></Text>
+            <Text style={{fontSize:16,color:'black',textDecorationLine: 'underline'}}>今天想穿點什麼呢？</Text>
+            </View>
+            </View>
+            <WeatherInfo />
           </View>
           <View style={styles.rectangle}>
             <Text>Rectangle 2</Text>
@@ -217,13 +217,24 @@ function HomeScreen() {
             <View ref={sectionRefs[3]} style={[styles.section, { margin: 10 }]}>
             <LoveDataPreview 
                 loveData={loveData} 
-                onShowMore={handleShowMore}
+                onShowMore={() => setOutfitModalVisible(true)}
                 previewCount={3} // 顯示前3個收藏的穿搭
               />
             </View>
           </View>
         </ScrollView>
       </View>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={outfitModalVisible}
+        onRequestClose={() => setOutfitModalVisible(false)}
+      >
+        <OutfitDetailModal
+          outfits={loveData}
+          onClose={() => setOutfitModalVisible(false)}
+        />
+      </Modal>
     </View>
   );
 }
@@ -234,6 +245,7 @@ function WeatherInfo() {
   const [weatherData, setWeatherData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { setWeatherInfo } = useData();
 
   const fetchWeatherData = useCallback(async () => {
     setLoading(true);
@@ -243,7 +255,7 @@ function WeatherInfo() {
         `https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization=${API_KEY}&locationName=${encodeURIComponent(LOCATION)}`
       );
       const data = await response.json();
-      console.log(data)
+      console.log(data);
       setWeatherData(data);
     } catch (err) {
       setError('Failed to fetch weather data');
@@ -252,13 +264,7 @@ function WeatherInfo() {
     }
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchWeatherData();
-    }, [fetchWeatherData])
-  );
-
-  const getCurrentWeatherInfo = () => {
+  const getCurrentWeatherInfo = useCallback(() => {
     if (!weatherData || !weatherData.records || !weatherData.records.location) {
       return null;
     }
@@ -268,26 +274,38 @@ function WeatherInfo() {
 
     const weatherElements = {};
     location.weatherElement.forEach(element => {
-      // 找出最早的 startTime
       const earliestTimeInfo = element.time.reduce((earliest, timeInfo) => {
         const startTime = new Date(timeInfo.startTime);
         return startTime < new Date(earliest.startTime) ? timeInfo : earliest;
       }, element.time[0]);
 
-      // 如果 currentTime 小於最早的 startTime，使用最早的時間區間
       const relevantTimeInfo = currentTime < new Date(earliestTimeInfo.startTime)
         ? earliestTimeInfo
         : element.time.find(timeInfo => {
             const startTime = new Date(timeInfo.startTime);
             const endTime = new Date(timeInfo.endTime);
             return currentTime >= startTime && currentTime <= endTime;
-          }) || earliestTimeInfo; // 如果找不到符合的時間區間，使用最早的
+          }) || earliestTimeInfo;
 
       weatherElements[element.elementName] = relevantTimeInfo.parameter;
     });
 
     return weatherElements;
-  };
+  }, [weatherData]);
+
+  // 使用 useEffect 來更新 weatherInfo
+  useEffect(() => {
+    const currentWeather = getCurrentWeatherInfo();
+    if (currentWeather) {
+      setWeatherInfo(currentWeather);
+    }
+  }, [getCurrentWeatherInfo, setWeatherInfo]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchWeatherData();
+    }, [fetchWeatherData])
+  );
 
   if (loading) {
     return (
@@ -306,7 +324,7 @@ function WeatherInfo() {
   }
 
   const currentWeather = getCurrentWeatherInfo();
-
+  
   if (!currentWeather) {
     return (
       <View style={styles.weatherContainer}>
@@ -314,17 +332,21 @@ function WeatherInfo() {
       </View>
     );
   }
-  
+
   return (
     <View style={styles.weatherContainer}>
       <Text style={styles.weatherTitle}>今日天氣</Text>
-      <Text style={styles.weatherMain}>{currentWeather.Wx.parameterName}</Text>
+      <Text style={styles.weatherMain} numberOfLines={1} adjustsFontSizeToFit>
+        {currentWeather.Wx.parameterName}
+      </Text>
       <View style={styles.tempContainer}>
         <Text style={styles.tempText}>{currentWeather.MaxT.parameterName}°C</Text>
         <Text style={styles.tempSeparator}> / </Text>
         <Text style={styles.tempText}>{currentWeather.MinT.parameterName}°C</Text>
       </View>
-      <Text style={styles.rainChance}>降雨機率：{currentWeather.PoP.parameterName}%</Text>
+      <Text style={styles.rainChance}>
+        降雨機率：{currentWeather.PoP.parameterName}%
+      </Text>
     </View>
   );
 }
@@ -333,11 +355,12 @@ const screenWidth = Dimensions.get('window').width;
 
 const styles = StyleSheet.create({
   weatherContainer: {
-    position: 'absolute',
-    right: 10,  // 改為 right
-    top: 10,
-    width: 150,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+  
+    width: '40%',
+    height:'90%',
+    alignSelf:'flex-end',
+    margin:10,
+    backgroundColor: 'rgba(128, 128, 128, 0.2)',
     padding: 15,
     borderRadius: 15,
     shadowColor: "#000",
@@ -347,7 +370,7 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    elevation: 5,
+    
   },
   weatherTitle: {
     fontSize: 18,
@@ -356,7 +379,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   weatherMain: {
-    fontSize: 16,
+    fontSize:16,
     color: '#333',
     marginBottom: 5,
   },
@@ -365,6 +388,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 5,
+    alignSelf:'flex-start'
   },
   tempText: {
     fontSize: 18,
@@ -385,18 +409,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   container: {
-    flex: 9,
-    backgroundColor: '#F5F5F5',
+    height:'75%',
+    backgroundColor: '#f8f0e3',
+    
   },
   navContainer: {
+    height:'10%',
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 6,
-    backgroundColor: '#FDFFFF',
+    marginHorizontal:10,
+    borderRadius:20,
+    backgroundColor: '#Ffffff',
   },
   navItem: {
-    padding: 6,
+    padding: 4,
     borderBottomWidth: 0,
+    alignSelf:'center',
     borderBottomColor: 'transparent',
   },
   selectedNavItem: {
@@ -408,14 +436,14 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   scrollView: {
-    flex: 1,
+    height:'90%',
     backgroundColor: '#f8f0e3',
   },
   section: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#D0C5B4',
+    backgroundColor: '#ddc9af',
     borderRadius: 20,
     margin: 10,
   },
@@ -429,23 +457,21 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   dateContainer: {
-    width: '50%',
+    width: '100%',
     height: 50,
     backgroundColor: 'rgba(225, 219, 209, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 15,
-    position: 'absolute',
-    left: 10,  // 改為 left
-    top: 10,
+    alignContent:'flex-start',
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
     },
+    margin:10,
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    elevation: 5,
   },
   dateText: {
     fontSize: 20,
@@ -453,14 +479,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   rectangle: {
-    height: '95%',
-    width: screenWidth - 40,
-    backgroundColor: '#D0C5B4',
+    height: '90%',
+    flexDirection:'row',
+    width: screenWidth - 30,
+    backgroundColor: 'rgba(255,255,255,1)',
     borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 20,
-    position: 'relative',
+    justifyContent: 'space-between',
+    marginHorizontal: 15,
+    alignSelf:'center'
+    
   },
 });
 

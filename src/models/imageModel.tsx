@@ -7,10 +7,20 @@ class UserModel {
     
     this.imageDAO = new ImageDAO();
   }
-
-  async uploadImage(URI,classes) {
+  async removeClotheImage(imageId,classes) {
     try {
-      const user = await this.imageDAO.UploadImage(URI,classes);
+      const imgid = await this.imageDAO.removeClotheImage(imageId,classes);
+      console.log('removing...',imgid)
+      // 这里可以添加更多的业务逻辑处理，例如数据转换、过滤等
+      return imgid;
+    } catch (error) {
+      console.error('Error in getUserProfile:', error);
+      throw error;
+    }
+  }
+  async uploadImage(URI,classes,coordinate) {
+    try {
+      const user = await this.imageDAO.UploadImage(URI,classes,coordinate);
       console.log('3',user)
       // 这里可以添加更多的业务逻辑处理，例如数据转换、过滤等
       return user;
@@ -39,6 +49,21 @@ class UserModel {
       console.error('Error in Upload Model:', error);
       throw error;
   }
+ }
+ async uploadClosetToDataBase(closetData:{uri:string,originalWidth:number,originalHeight:number,coords:number[][]}){
+    try{
+      const closetUrl=await this.imageDAO.uploadClosetToDataBase(closetData)
+      return closetUrl ;
+    }
+    catch (error){
+        console.error('Error in Upload Closet in imageModel:', error);
+        throw error;
+    }
+ }
+ async getClosetImageFromFirebase(){
+    const tmp =await this.imageDAO.getClosetImageFromFirebase()
+    console.log(tmp+"第一站")
+    return tmp;
  }
  async getModelImage(){
   try{

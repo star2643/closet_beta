@@ -1,10 +1,14 @@
-import React, { useState, useRef,useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet, Modal, Image,ActivityIndicator, Alert,Animated, Easing } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet, Modal, Image, ActivityIndicator, Alert, Animated } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { useData } from '../services/DataContext'
+import { useData } from '../services/DataContext';
 import { preloadImages } from '../services/imagePreloader';
+import MarkedImageComponent from './MarkedImageComponent';
+import ConfirmDialog from './ConfirmDialog'; 
 type Category = '上裝' | '下裝' | '外套' | '連身';
-const engToCHListconst:{ [key: string]: string }= {'main-bottom': '下裝',
+
+const engToCHListconst: { [key: string]: string } = {
+  'main-bottom': '下裝',
   'main-jacket': '外套',
   'main-one-piece': '連身',
   'main-top': '上裝',
@@ -41,10 +45,8 @@ const engToCHListconst:{ [key: string]: string }= {'main-bottom': '下裝',
   'tertiary-pleated-skirt': '百褶裙',
   'tertiary-shirt': '襯衫',
   'tertiary-suit-skirt': '西裝裙',
-  'tertiary-utility-skirt': '工裝裙'}
-  const initialData: { 'fileName': string; 'url': string;'classes': string[] }[] = [
-    {fileName:'1',url:'',classes:['上裝']}
-  ];
+  'tertiary-utility-skirt': '工裝裙'
+};
 
 const categories: (Category | 'All')[] = ['All', '上裝', '下裝', '連身', '外套'];
 const subCategories = {
@@ -66,21 +68,21 @@ const topSubCategories = {
   連身裙: [],
   連身褲: [],
   長裙: ['牛仔裙', '西裝裙', '工裝裙', '百褶裙'],
-  無帽: ['西裝外套', '大衣', '罩衫', '羽絨外套','牛仔夾克'],
+  無帽: ['西裝外套', '大衣', '罩衫', '羽絨外套', '牛仔夾克'],
   有帽: ['羽絨外套'],
 };
-const moreOptionsByinitial=['長袖', '連衣裙', '短裙', '短袖', '短褲', '無袖', '七分褲', '長裙', '七分袖', '西裝外套', '工裝褲', '大衣', '棉褲', '牛仔夾克', '牛仔裙', '連帽衫', '西裝褲', '背心', 'T恤', '罩衫', '羽絨外套', '牛仔褲', '其他長袖', '其他褲子', '其他短袖', '其他裙子', '百褶裙', '襯衫', '西裝裙', '工裝裙']
-const setItemsByinitial=['下裝', '外套', '連身', '上裝', '有帽', '無帽', '連身褲', '長褲']
+
 type DataItemWithBase64 = {
   fileName: string;
   url: string;
   classes: string[];
   base64: string;
 };
+
 function MyWardrobe() {
-  const { data,isLoading, uploadImage, uploadImageToDatabase ,setData} = useData();
+  const { data, isLoading, uploadImage, uploadImageToDatabase, setData,closetImage,removeClotheImage } = useData();
   const [isPreloading, setIsPreloading] = useState(true);
-  const [firstwithPreload, setfirstwithPreload] = useState(true);
+  const [firstwithPreload, setFirstwithPreload] = useState(true);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.5)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -89,15 +91,36 @@ function MyWardrobe() {
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
   const [topSubCategory, setTopSubCategory] = useState<string | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isMoreOptionsVisible, setIsMoreOptionsVisible] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const [moreOptions, setMoreOptions] = useState(moreOptionsByinitial);
-  const [items, setItems] = useState(setItemsByinitial);
   const [loading, setLoading] = useState(false);
   const [isItemModalVisible, setIsItemModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-
+  const [currentPage, setCurrentPage] = useState('details');
+  const [deleteLoading,setDeleteLoading]=useState(false)
+  // 新添加的狀態
+  const [mainCategories] = useState(['下裝', '外套', '連身', '上裝']);
+  const [secondaryCategories] = useState(['有帽', '無帽', '連身褲', '長褲', '長袖', '連衣裙', '短裙', '短袖', '短褲', '無袖', '七分褲', '長裙', '七分袖']);
+  const [tertiaryCategories] = useState(['西裝外套', '工裝褲', '大衣', '棉褲', '牛仔夾克', '牛仔裙', '連帽衫', '西裝褲', '背心', 'T恤', '罩衫', '羽絨外套', '牛仔褲', '其他長袖', '其他褲子', '其他短袖', '其他裙子', '百褶裙', '襯衫', '西裝裙', '工裝裙']);
+  const [selectedMarker, setSelectedMarker] = useState(null);
+  const [selectedCoordinate, setSelectedCoordinate] = useState([]);
+  const [isConfirmDialogVisible, setIsConfirmDialogVisible] = useState(false);
+  const handleMarkerSelect = (index, coordinate) => {
+    if (selectedMarker === index) {
+      // 如果已經選中，則取消選擇
+      setSelectedMarker(null);
+      setSelectedCoordinate(null);
+    } else {
+      // 否則，選中新的標記
+      setSelectedMarker(index);
+      setSelectedCoordinate(coordinate);
+    }
+    // 這裡你可以添加一個回調函數來將選中的座標傳回父組件
+    // 例如：onMarkerSelect(index, coordinate);
+  };
+  useEffect(() => {
+    console.log(selectedCoordinate)
+  }, [selectedCoordinate]);
   const handleCategorySelect = (category: Category | 'All') => {
     setSelectedCategory(category === 'All' ? null : category);
     setSelectedSubCategory(null);
@@ -129,20 +152,18 @@ function MyWardrobe() {
           const translatedLabel = engToCHListconst[label];
           CH_label.push(translatedLabel);
         }
-        setItems((prevItems) => prevItems.filter(i => !CH_label.includes(i)));
-        setMoreOptions((prevItems) => prevItems.filter(i => !CH_label.includes(i)));
-        setSelectedItems((prevOptions) => [...prevOptions, ...CH_label]);
+        setSelectedItems((prevOptions) => [...CH_label]);
         setImageUri(result.uri);
       }
     } catch (error) {
-      console.error('Image upload failed1:', error);
+      console.error('Image upload failed:', error);
     }
     setLoading(false);
   };
+
   useEffect(() => {
-    
     const preloadAllImages = async () => {
-      if (data.length > 0&&firstwithPreload) {
+      if (data.length > 0 && firstwithPreload) {
         setIsPreloading(true);
         const imageUrls = data.map(item => item.url);
         const base64Images = await preloadImages(imageUrls);
@@ -154,43 +175,24 @@ function MyWardrobe() {
 
         setPreloadedData(newPreloadedData);
         setIsPreloading(false);
-        setfirstwithPreload(false)
+        setFirstwithPreload(false);
       }
     };
 
     preloadAllImages();
-  }, [data]);
-  useEffect(() => {
-    if (imageUri) {
-      handleAfterImageLoad();
-    }
-  }, [imageUri]);
-
-  const handleAfterImageLoad = () => {
-    setItems((prevItems) => {
-      const total_num = selectedItems.length + items.length;
-      const toMove_num = total_num - 8;
-      const tmpArr = [];
-      for (let i = 0; i < toMove_num; i++) {
-        tmpArr.push(prevItems.pop());
-      }
-      setMoreOptions((prevOptions) => [...prevOptions, ...tmpArr]);
-      return prevItems;
-    });
-  };
+  }, [data, firstwithPreload]);
 
   const initialOption = () => {
-    setMoreOptions(moreOptionsByinitial);
-    setItems(setItemsByinitial);
     setSelectedItems([]);
+    setSelectedCoordinate(null);
     setIsModalVisible(false);
   };
 
   const uploadToDatabase = async () => {
     if (imageUri && selectedItems.length > 0 && uploadImageToDatabase) {
-      await uploadImageToDatabase(imageUri, selectedItems);
-      setPreloadedData((prevData) => [...prevData, { fileName: imageUri, url: imageUri,base64:'', classes: selectedItems }]);
-      setData((prevData) => [...prevData, { fileName: imageUri, url: imageUri, classes: selectedItems }]);
+      const tmpId=await uploadImageToDatabase(imageUri, selectedItems,selectedCoordinate?selectedCoordinate:[]);
+      setPreloadedData((prevData) => [...prevData, { fileName: tmpId, url: imageUri, base64: '', classes: selectedItems ,coordinate:[selectedCoordinate]}]);
+      setData((prevData) => [...prevData, { fileName: tmpId, url: imageUri, classes: selectedItems,coordinate:[selectedCoordinate]}]);
       initialOption();
       Alert.alert("上傳成功!");
     } else if (imageUri) {
@@ -199,156 +201,87 @@ function MyWardrobe() {
       Alert.alert("請先上傳圖片");
     }
   };
+
   const toggleSelection = (item: string) => {
     setSelectedItems((prevItems) => {
       if (prevItems.includes(item)) {
-        // 如果已经选中，取消选中
-        const updatedItems = prevItems.filter(i => i !== item);
-        if(updatedItems.length+items.length<9){
-          setItems((prevItems) => {
-            return [...prevItems,item]
-          })
-        }
-        // 防止重复添加到 moreOptions 中
-        else if (!moreOptions.includes(item)&&!items.includes(item)) {
-          const updatedOptions = [...moreOptions];
-          setMoreOptions(updatedOptions);
-        }
-  
-        return updatedItems;
+        return prevItems.filter(i => i !== item);
       } else {
-        const tmpToSelectItems = [...prevItems, item];
-        setItems((prevItems) => {
-          const updatedItems = prevItems.filter(i => i !== item);
-          return updatedItems
-        })
-        if (tmpToSelectItems.length > 5) {
-          const excessItem = tmpToSelectItems.shift(); // 移除超過 5 個的按鈕
-          if (items.length<4&&!items.includes(excessItem)) {
-            setItems((prevOptions) => [...prevOptions, excessItem!]);
-          }
-          // 防止重复添加到 moreOptions 中
-          else if (!moreOptions.includes(excessItem)) {
-            setMoreOptions((prevOptions) => [...prevOptions, excessItem!]);
-          }
-        }
-  
-        // 确保新选中的项不会出现在 moreOptions 中
-        setMoreOptions((prevOptions) => prevOptions.filter((option) => option !== item));
-  
-        return tmpToSelectItems;
+        return [...prevItems, item];
       }
     });
   };
-  
 
-  const handleOptionSelect = (option: string) => {
-    
-    setSelectedItems((prevItems) => {
-      const tmpToSelectItems = [...prevItems, option];
-      if (tmpToSelectItems.length > 5) {
-        const excessItem = tmpToSelectItems.shift(); // 移除超過 5 個的按鈕
-        if (!items.includes(excessItem)) {
-          setItems((prevItems) => {
-            const popedItem = prevItems.pop()
-            setMoreOptions((prevOptions) => [...prevOptions, popedItem!]);
-            return [...prevItems, excessItem!]
-          })
-          
-        }
-        
-      }
-      else{
-        setItems((prevItems) => {
-          const outItem=prevItems.pop()
-
-          setMoreOptions((prevOptions) => [...prevOptions, outItem!]); // 從更多選項中移除
-          return prevItems
-        });
-      }
-      return tmpToSelectItems;
-    });
-    console.log(items.length,' ',selectedItems.length)
-    setMoreOptions((prevOptions) => prevOptions.filter((item) => item !== option)); // 從更多選項中移除
-    
-  };
-    // const uri=await imageController.uploadImage()
-    // if(uri){
-    //   setImageUri(uri)
-    //   const result=await imageController.temp(uri)
-    // }
-    
-  
-    useEffect(() => {
-      if (isLoading || isPreloading) {
-        Animated.parallel([
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.spring(scaleAnim, {
-            toValue: 1,
-            friction: 4,
-            useNativeDriver: true,
-          }),
-          Animated.timing(progressAnim, {
-            toValue: 1,
-            duration: 2000,
-            useNativeDriver: false,
-          })
-        ]).start();
-      }
-    }, [isLoading, isPreloading, fadeAnim, scaleAnim, progressAnim]);
-    // ... 其他代碼保持不變
-  
+  useEffect(() => {
     if (isLoading || isPreloading) {
-      if(!(data.length>0)&&!(preloadedData.length>0)){
-        setIsPreloading(false)
-      }
-      return (
-        <View style={styles.loadingContainer}>
-          <Animated.View style={[
-            styles.loadingContent,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }]
-            }
-          ]}>
-            <ActivityIndicator size="large" color="#B8AC9B" />
-            <Text style={styles.loadingText}>
-              {isPreloading ? "正在為您準備精美衣櫃..." : "正在整理您的時尚單品..."}
-            </Text>
-            <View style={styles.progressBar}>
-              <Animated.View 
-                style={[
-                  styles.progressFill,
-                  {
-                    transform: [{
-                      scaleX: progressAnim
-                    }],
-                    transformOrigin: 'left',
-                  }
-                ]} 
-              />
-            </View>
-          </Animated.View>
-        </View>
-      );
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 4,
+          useNativeDriver: true,
+        }),
+        Animated.timing(progressAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: false,
+        })
+      ]).start();
     }
+  }, [isLoading, isPreloading, fadeAnim, scaleAnim, progressAnim]);
+
+  if (isLoading || isPreloading) {
+    if (!(data.length > 0) && !(preloadedData.length > 0)) {
+      setIsPreloading(false);
+    }
+    return (
+      <View style={styles.loadingContainer}>
+        <Animated.View style={[
+          styles.loadingContent,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }]
+          }
+        ]}>
+          <ActivityIndicator size="large" color="#B8AC9B" />
+          <Text style={styles.loadingText}>
+            {isPreloading ? "正在為您準備精美衣櫃..." : "正在整理您的時尚單品..."}
+          </Text>
+          <View style={styles.progressBar}>
+            <Animated.View 
+              style={[
+                styles.progressFill,
+                {
+                  transform: [{
+                    scaleX: progressAnim
+                  }],
+                  transformOrigin: 'left',
+                }
+              ]} 
+            />
+          </View>
+        </Animated.View>
+      </View>
+    );
+  }
+
+  const filteredData = preloadedData.filter((item) => {
+    if (selectedCategory && selectedCategory !== 'All') {
+      if (!item.classes.includes(selectedCategory)) return false;
+    }
+    if (selectedSubCategory) {
+      if (!item.classes.includes(selectedSubCategory)) return false;
+    }
+    if (topSubCategory) {
+      if (!item.classes.includes(topSubCategory)) return false;
+    }
+    return true;
+  });
   
-    const filteredData = preloadedData.filter((item) => {
-      if (selectedCategory && selectedCategory !== 'All') {
-        if (!item.classes.includes(selectedCategory)) return false;
-      }
-      if (selectedSubCategory) {
-        if (!item.classes.includes(selectedSubCategory)) return false;
-      }
-      if (topSubCategory) {
-        if (!item.classes.includes(topSubCategory)) return false;
-      }
-      return true;
-    });
   return (
     <View style={Wardrobe.container}>
       <View style={[
@@ -410,34 +343,33 @@ function MyWardrobe() {
             ))}
           </ScrollView>
         )}
-
         <View style={{ flex: 1, position: 'relative' }}>
-          <FlatList
+        <FlatList
             data={filteredData}
             keyExtractor={(item) => item.fileName}
             renderItem={({ item }) => (
-              <TouchableOpacity style={Wardrobe.itemContainer}
-              onPress={() => {
-                setSelectedItem(item); // 設置選中的物品
-                setIsItemModalVisible(true); // 顯示彈窗
-              }}>
-                  {item.base64?(<Image source={{ uri: item.base64 }} style={Wardrobe.itemImage} />):(
-                    <Image source={{ uri: item.url }} style={Wardrobe.itemImage} />
-                  )}
-                <View style={{width:'100%',flex:1,flexDirection :'row',justifyContent: 'space-between'}}>
-                  {item.classes
-                          
-                          .map(itemClass => (
-                            <TouchableOpacity
-                              key={itemClass}
-                              
-                              style={Wardrobe.roundButton2}
-                              
-                            >
-                              <Text style={Wardrobe.buttonText2}>{itemClass}</Text>
-                            </TouchableOpacity>
+              <TouchableOpacity 
+                style={Wardrobe.itemContainer}
+                onPress={() => {
+                  setSelectedItem(item);
+                  setIsItemModalVisible(true);
+                }}
+              >
+                {item.base64 ? (
+                  <Image source={{ uri: item.base64 }} style={Wardrobe.itemImage} />
+                ) : (
+                  <Image source={{ uri: item.url }} style={Wardrobe.itemImage} />
+                )}
+                <View style={{width:'100%', flex:1, flexDirection:'row', justifyContent:'space-between'}}>
+                  {item.classes.map(itemClass => (
+                    <TouchableOpacity
+                      key={itemClass}
+                      style={Wardrobe.roundButton2}
+                    >
+                      <Text style={Wardrobe.buttonText2}>{itemClass}</Text>
+                    </TouchableOpacity>
                   ))}
-                 </View>
+                </View>
               </TouchableOpacity>
             )}
             numColumns={2}
@@ -449,6 +381,7 @@ function MyWardrobe() {
           <Text style={Wardrobe.floatingButtonText}>+</Text>
         </TouchableOpacity>
       </View>
+
       {/* 選擇的衣物彈出視窗 */}
       <Modal
         animationType="slide"
@@ -457,14 +390,7 @@ function MyWardrobe() {
         onRequestClose={() => setIsItemModalVisible(false)}
       >
         <View style={Wardrobe.modalContainer}>
-          <View style={Wardrobe.modalContent}>
-            {selectedItem && (
-              <>
-                <Text style={Wardrobe.modalTitle}>分類: {selectedItem.classes}</Text>
-                <Text style={Wardrobe.modalTitle}>名稱: {selectedItem.fileName}</Text>
-              </>
-            )}
-
+          <View style={Wardrobe.modalContent2}>
             <TouchableOpacity
               style={Wardrobe.closeButton}
               onPress={() => setIsItemModalVisible(false)}
@@ -472,20 +398,76 @@ function MyWardrobe() {
               <Text style={Wardrobe.closeButtonText}>X</Text>
             </TouchableOpacity>
 
-            {/* 新增刪除按鈕 */}
+            {selectedItem && (
+              <>
+                <View style={{height:'35%',width:'100%'}}>
+                  <Image 
+                    source={{ uri: selectedItem.base64 || selectedItem.url }} 
+                    style={Wardrobe.modalImage} 
+                  />
+                </View>
+                {/* 添加導覽列 */}
+                <View style={Wardrobe.tabBar}>
+                  <TouchableOpacity
+                    style={[Wardrobe.tabItem, currentPage === 'details' && Wardrobe.activeTab]}
+                    onPress={() => setCurrentPage('details')}
+                  >
+                    <Text style={Wardrobe.tabText}>詳細資訊</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[Wardrobe.tabItem, currentPage === 'edit' && Wardrobe.activeTab]}
+                    onPress={() => setCurrentPage('edit')}
+                  >
+                    <Text style={Wardrobe.tabText}>存放位置</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* 詳細資訊頁面 */}
+                {currentPage === 'details' && (
+                  <View style={Wardrobe.pageContent}>
+                    <Text style={Wardrobe.modalTitle}>分類: {selectedItem.classes.join(', ')}</Text>
+                    <Text style={Wardrobe.modalTitle}>名稱: {selectedItem.fileName}</Text>
+                    {/* 可以在這裡添加更多詳細資訊 */}
+                  </View>
+                )}
+
+                {/* 編輯頁面 */}
+                {currentPage === 'edit' && (
+                  
+                  <View style={Wardrobe.pageContent}>
+                    <ScrollView>
+                    {closetImage?
+                    (
+                      <View style={{width:320,height:320,alignSelf:'center',justifyContent:'center',borderWidth:10,borderColor:'rgba(0,0,0,0.5)'}}>
+                      <MarkedImageComponent
+                      imageUri={closetImage.uri}
+                      coordinates={selectedItem.coordinate}
+                      originalWidth={640}
+                      originalHeight={640}
+                      onAddMarker={null}
+                      isEditable={false}/>
+                      </View>
+                    ):(
+                      <Text style={Wardrobe.modalTitle}>您尚未添加衣櫃照片！</Text>
+
+                    )}
+                    </ScrollView>
+                  </View>
+                  
+                )}
+              </>
+            )}
+
             <TouchableOpacity
               style={Wardrobe.deleteButton}
-              onPress={() => {
-                // 在此處添加刪除的邏輯
-                console.log('Item deleted:', selectedItem);
-                setIsItemModalVisible(false); // 关掉弹窗
-              }}
+              onPress={() => setIsConfirmDialogVisible(true)}
             >
               <Text style={Wardrobe.deleteButtonText}>刪除</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
+
       {/* 从下往上弹出的 Modal */}
       <Modal
         animationType="slide"
@@ -500,54 +482,102 @@ function MyWardrobe() {
               <Text style={Wardrobe.uploadButtonText}>選擇照片</Text>
             </TouchableOpacity>
             
-            {/* 如果有圖片則顯示圖片，否則顯示佔位符 */}
             {imageUri ? (
               <>
                 <Image source={{ uri: imageUri }} style={Wardrobe.uploadedImage} />
-                <View style={styles.container}>
-                  {selectedItems.map((item) => (
-                    <TouchableOpacity
-                      key={item}
-                      style={[Wardrobe.roundButton, Wardrobe.selectedButton]}
-                      onPress={() => toggleSelection(item)}
-                    >
-                      <Text style={Wardrobe.buttonText}>{item}</Text>
-                    </TouchableOpacity>
-                  ))}
-                      {items
-                        
-                        .map(item => (
-                          <TouchableOpacity
-                            key={item}
-                            style={Wardrobe.roundButton}
-                            onPress={() => toggleSelection(item)}
-                          >
-                            <Text style={Wardrobe.buttonText}>{item}</Text>
-                          </TouchableOpacity>
-                        ))}
-                        <TouchableOpacity
-                    style={Wardrobe.roundButton}
-                    onPress={() => setIsMoreOptionsVisible(true)}
-                  >
-                    <Text style={Wardrobe.buttonText}>{'>>'}</Text>
-                  </TouchableOpacity>
-                </View>
+                <ScrollView style={styles.categoriesContainer}>
+                  <Text style={styles.categoryTitle}>主分類</Text>
+                  <View style={styles.categoryRow}>
+                    {mainCategories.map((item) => (
+                      <TouchableOpacity
+                        key={item}
+                        style={[styles.categoryButton, selectedItems.includes(item) && styles.selectedCategoryButton]}
+                        onPress={() => toggleSelection(item)}
+                      >
+                        <Text style={styles.categoryButtonText}>{item}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
 
+                  <Text style={styles.categoryTitle}>長短分類</Text>
+                  <View style={styles.categoryRow}>
+                    {secondaryCategories.map((item) => (
+                      <TouchableOpacity
+                        key={item}
+                        style={[styles.categoryButton, selectedItems.includes(item) && styles.selectedCategoryButton]}
+                        onPress={() => toggleSelection(item)}
+                      >
+                        <Text style={styles.categoryButtonText}>{item}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  <Text style={styles.categoryTitle}>類型分類</Text>
+                  <View style={styles.categoryRow}>
+                    {tertiaryCategories.map((item) => (
+                      <TouchableOpacity
+                        key={item}
+                        style={[styles.categoryButton, selectedItems.includes(item) && styles.selectedCategoryButton]}
+                        onPress={() => toggleSelection(item)}
+                      >
+                        <Text style={styles.categoryButtonText}>{item}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  {closetImage ? (
+                    <>
+                  <View style={{width:320,height:320,alignSelf:'center',justifyContent:'center',borderWidth:10,borderColor:'rgba(0,0,0,0.5)'}}>
+                    <MarkedImageComponent
+                      imageUri={closetImage.uri}
+                      coordinates={closetImage.coords}
+                      originalWidth={640}
+                      originalHeight={640}
+                      onAddMarker={null}
+                      isEditable={false}
+                    />
+                  </View>
+                  <Text style={Wardrobe.markerListTitle}>選擇存放位置:</Text>
+                  {closetImage.coords.map((coord, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        style={[
+                          Wardrobe.markerItem,
+                          selectedMarker === index && Wardrobe.selectedMarkerItem
+                        ]}
+                        onPress={() => handleMarkerSelect(index, coord)}
+                      >
+                        <View style={Wardrobe.checkboxContainer}>
+                          <View style={[
+                            Wardrobe.checkbox,
+                            selectedMarker === index && Wardrobe.checkedCheckbox
+                          ]}>
+                            {selectedMarker === index && <Text style={Wardrobe.checkmark}>✓</Text>}
+                          </View>
+                        </View>
+                        <Text style={Wardrobe.markerText}>標記 {index + 1}: ({coord[0].toFixed(2)}, {coord[1].toFixed(2)})</Text>
+                      </TouchableOpacity>
+                    ))}
+                </>
+                ):
+                ( <>
+                
+                  </>)}
+                </ScrollView>
                 
                 
-                  
               </>
             ) : (
               <View style={Wardrobe.imagePlaceholder}>
                 <Text style={Wardrobe.placeholderText}>圖片預覽</Text>
               </View>
-              
             )}
+            
             {loading && (
-                    <View style={styles.loadingContainer2}>
-                      <ActivityIndicator size="large" color="#0000ff" />
-                    </View>
-                  )}
+              <View style={styles.loadingContainer2}>
+                <ActivityIndicator size="large" color="#0000ff" />
+              </View>
+            )}
+            
             <TouchableOpacity style={Wardrobe.uploadButton} onPress={uploadToDatabase}>
               <Text style={Wardrobe.uploadButtonText}>上傳</Text>
             </TouchableOpacity>
@@ -558,49 +588,34 @@ function MyWardrobe() {
           </View>
         </View>
       </Modal>
-      {/* More Options Modal */}
-      <Modal
-  animationType="slide"
-  transparent={true}
-  visible={isMoreOptionsVisible}
-  onRequestClose={() => setIsMoreOptionsVisible(false)}
->
-  <View style={Wardrobe.modalContainer}>
-    <View style={Wardrobe.moreOptionsModalContent}>
-      <Text style={Wardrobe.moreOptionsTitle}>更多選項</Text>
-
-      {/* 使用 ScrollView 讓內容可滑動 */}
-      <ScrollView contentContainerStyle={Wardrobe.scrollViewContent}>
-        {/* Render buttons 3 per row */}
-        {moreOptions.reduce((rows, option, index) => {
-          if (index % 3 === 0) rows.push([]); // 每3個選項開始一行
-          rows[rows.length - 1].push(option);
-          return rows;
-        }, [] as string[][]).map((row, rowIndex) => (
-          <View key={rowIndex} style={Wardrobe.moreOptionsButtonRow}>
-            {row.map((option) => (
-              <TouchableOpacity 
-                key={option} 
-                style={Wardrobe.moreOptionsRoundButton} 
-                onPress={() => handleOptionSelect(option)}
-              >
-                <Text style={Wardrobe.moreOptionsButtonText}>{option}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        ))}
-      </ScrollView>
-
-      <TouchableOpacity style={Wardrobe.closeButton} onPress={() => setIsMoreOptionsVisible(false)}>
-        <Text style={Wardrobe.closeButtonText}>X</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-</Modal>
-
+      <ConfirmDialog
+        visible={isConfirmDialogVisible}
+        onClose={() => setIsConfirmDialogVisible(false)}
+        onConfirm={async () => {
+          if (removeClotheImage) {
+            try {
+              setDeleteLoading(true);
+              await removeClotheImage(selectedItem.fileName, selectedItem.classes);
+              console.log('Item deleted:', selectedItem);
+              setIsItemModalVisible(false);
+              setData(prevData => prevData.filter(item => item.fileName !== selectedItem.fileName));
+              setPreloadedData(prevData => prevData.filter(item => item.fileName !== selectedItem.fileName));
+            } catch (error) {
+              console.error('Delete failed:', error);
+              Alert.alert("刪除失敗", "無法刪除衣服，請稍後再試。");
+            } finally {
+              setDeleteLoading(false);
+              setIsConfirmDialogVisible(false);
+            }
+          }
+        }}
+        message="您確定要刪除這件衣服嗎？這將會連同包含此服飾的穿搭一同刪除"
+        isLoading={deleteLoading}
+      />
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
@@ -646,73 +661,102 @@ const styles = StyleSheet.create({
     backgroundColor: '#B8AC9B',
   },
   container: {
-    flexDirection: 'row',    // 横向排列
-    flexWrap: 'wrap',        // 自动换行
-    justifyContent: 'space-between', // 均匀分布
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
     padding: 10,
   },
   roundButton: {
-    width: 64,            // 按钮宽度，确保两列显示
-    height:40,
-    
-    marginVertical: 10, 
-    marginHorizontal: 2,     // 上下间距
-    padding: 10,             // 按钮内边距
-    backgroundColor: '#ccc', // 示例按钮背景色
-    alignItems: 'center', 
-    textAlignVertical:'center',   // 文本居中
-    
-    borderRadius: 20,        // 圆角样式
+    width: 64,
+    height: 40,
+    marginVertical: 10,
+    marginHorizontal: 2,
+    padding: 10,
+    backgroundColor: '#ccc',
+    alignItems: 'center',
+    textAlignVertical: 'center',
+    borderRadius: 20,
   },
   buttonText: {
-    color: '#000',           // 按钮文本颜色
-    fontSize: 14,            // 文本大小
+    color: '#000',
+    fontSize: 14,
+  },
+  categoriesContainer: {
+    maxHeight: 300,
+    width: '100%',
+  },
+  categoryTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+  },
+  categoryButton: {
+    backgroundColor: '#fff',
+    padding: 8,
+    borderRadius: 20,
+    margin: 4,
+    minWidth: 60,
+    alignItems: 'center',
+  },
+  selectedCategoryButton: {
+    backgroundColor: '#B8AC9B',
+  },
+  categoryButtonText: {
+    fontSize: 12,
+    color: '#333',
   },
 });
+
 const Wardrobe = StyleSheet.create({
   itemImage: {
-    flex: 3, // 高度占用剩餘空間的3倍
-    aspectRatio: 1, // 保持寬高相等
+    flex: 3,
+    aspectRatio: 1,
     marginTop: 10,
     borderRadius: 10,
   },
   moreOptionsModalContent: {
-    backgroundColor: '#f8f0e3', // Dark background to differentiate it from others
+    backgroundColor: '#f8f0e3',
     padding: 20,
     borderRadius: 20,
     alignItems: 'center',
     width: '100%',
-    height: '70%', // Adjust height to ensure buttons fit
+    height: '70%',
   },
   moreOptionsTitle: {
     fontSize: 18,
     marginBottom: 20,
-    color: 'black', // White text for contrast on dark background
+    color: 'black',
     fontFamily: 'serif',
   },
   moreOptionsButtonRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between', // Ensure 3 buttons per row with spacing
+    justifyContent: 'space-between',
     marginTop: 10,
     width: '100%',
   },
   moreOptionsRoundButton: {
-    backgroundColor: '#fff', // Use a bright color for buttons inside this modal
+    backgroundColor: '#fff',
     padding: 10,
     borderRadius: 30,
     marginHorizontal: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    width: '24%', // Keep buttons smaller inside the more options modal
+    width: '24%',
   },
   moreOptionsButtonText: {
-    color: '#B8AC9B', // Darker text on the bright button
+    color: '#B8AC9B',
     fontSize: 14,
     fontFamily: 'serif',
   },
   moreOptionsCloseButton: {
     marginTop: 20,
-    backgroundColor: '#FF6347', // A different color for the close button
+    backgroundColor: '#FF6347',
     padding: 10,
     borderRadius: 20,
     alignSelf: 'center',
@@ -729,10 +773,10 @@ const Wardrobe = StyleSheet.create({
   },
   categoryMenu: {
     width: '20%',
-    backgroundColor: '#D0C5B4', // 修改為你想要的顏色
+    backgroundColor: '#D0C5B4',
     paddingVertical: 10,
     paddingHorizontal: 5,
-},
+  },
   categoryItem: {
     paddingVertical: 15,
     paddingHorizontal: 10,
@@ -774,7 +818,6 @@ const Wardrobe = StyleSheet.create({
   },
   selectedSubCategoryItem: {
     backgroundColor: '#fff',
-    
   },
   subCategoryText: {
     fontSize: 14,
@@ -851,11 +894,19 @@ const Wardrobe = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#f8f0e3',
-    padding: 10, // Reduce padding to allow more space for buttons
+    padding: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     alignItems: 'center',
-    height: '70%', // Increase the height to show more content (adjust this if needed)
+    height: '80%',
+  },
+  modalContent2: {
+    backgroundColor: '#f8f0e3',
+    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    alignItems: 'center',
+    height: '95%',
   },
   modalTitle: {
     fontSize: 18,
@@ -884,7 +935,7 @@ const Wardrobe = StyleSheet.create({
   closeButton: {
     position: 'absolute',
     top: 10,
-    left: 10,
+    right: 10,
     padding: 10,
     backgroundColor: '#B8AC9B',
     borderRadius: 20,
@@ -936,32 +987,125 @@ const Wardrobe = StyleSheet.create({
     flex: 1,
   },
   selectedButton: {
-    backgroundColor: '#E0E0E0', // Selected button color
+    backgroundColor: '#E0E0E0',
   },
   buttonText: {
     color: '#B8AC9B',
     fontSize: 14,
-  },buttonText2: {
+  },
+  buttonText2: {
     color: '#B8AC9B',
     fontSize: 10,
-  },scrollViewContent: {
+  },
+  scrollViewContent: {
     flexGrow: 1,
     justifyContent: 'center',
   },
   deleteButton: {
-    position: 'absolute', // 將按鈕固定在底部
-    bottom: 20, // 距離底部20px
-    alignSelf: 'center', // 按鈕置中
-    backgroundColor: '#FF6347', // 刪除按鈕的背景色
+    position: 'absolute',
+    bottom: 20,
+    alignSelf: 'center',
+    backgroundColor: '#FF6347',
     paddingVertical: 10,
     paddingHorizontal: 40,
     borderRadius: 20,
   },
   deleteButtonText: {
-    color: '#fff', // 刪除按鈕的文本顏色
+    color: '#fff',
     fontSize: 18,
     fontFamily: 'serif',
   },
+  markerList: {
+    maxHeight: 150,
+    width: '100%',
+    marginBottom: 20,
+  },
+  markerItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  deleteButton2: {
+    color: 'red',
+  },
+  selectedMarkerItem: {
+    backgroundColor: '#e6f2ff',
+  },
+  selectedMarkerText: {
+    color: '#007AFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  markerListTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 10,
+    marginBottom: 5,
+    paddingHorizontal: 10,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    borderRadius: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkedCheckbox: {
+    backgroundColor: '#007AFF',
+  },
+  checkmark: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  markerText: {
+    flex: 1,
+  },
+  checkboxContainer: {
+    marginRight: 10,
+  },
+  // 新添加的樣式
+  modalImage: {
+    width: '50%',
+    height: '90%',
+    alignSelf:'center',
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    height:'7%',
+    width: '100%',
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#D0C5B4',
+  },
+  tabItem: {
+    padding: 10,
+    flex: 1,
+    alignItems: 'center',
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#B8AC9B',
+  },
+  tabText: {
+    fontSize: 16,
+    color: '#333',
+    fontFamily: 'serif',
+  },
+  pageContent: {
+    width: '100%',
+    alignItems: 'center',
+    flex: 1,
+  },
 });
+
 
 export default MyWardrobe;

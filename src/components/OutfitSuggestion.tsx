@@ -36,21 +36,27 @@ const OutfitSuggestion = ({ onOutfitSelect }) => {
   };
   
   const selectRandomItem = (type) => {
+    setIsLoved(false)
     if (type === 'top') {
       let newTop;
       do {
         const isOnePiece = Math.random() < 0.3;
         if (isOnePiece && clothingData.onePiece.length > 0) {
           newTop = clothingData.onePiece[Math.floor(Math.random() * clothingData.onePiece.length)];
-        } else {
+        } else if(clothingData.tops.length > 0) {
           newTop = clothingData.tops[Math.floor(Math.random() * clothingData.tops.length)];
+
         }
-      } while (newTop === selectedOutfit.top);
-  
-      if (newTop.classes.includes('連身')) {
-        setSelectedOutfit({ top: newTop, bottom: null });
-      } else {
-        setSelectedOutfit(prev => ({ ...prev, top: newTop }));
+        else{
+          newTop=null
+        }
+      } while (newTop === selectedOutfit.top&&newTop!=null);
+      if(newTop!=null){
+        if (newTop.classes.includes('連身')) {
+          setSelectedOutfit({ top: newTop, bottom: null });
+        } else {
+          setSelectedOutfit(prev => ({ ...prev, top: newTop }));
+        }
       }
     } else if (type === 'bottom') {
       if (selectedOutfit.top && selectedOutfit.top.classes.includes('連身')) {
@@ -63,10 +69,12 @@ const OutfitSuggestion = ({ onOutfitSelect }) => {
         
         setSelectedOutfit({ top: newTop, bottom: newBottom });
       } else {
-        let newBottom;
+        let newBottom=null;
         do {
-          newBottom = clothingData.bottoms[Math.floor(Math.random() * clothingData.bottoms.length)];
-        } while (newBottom === selectedOutfit.bottom);
+          if(clothingData.bottoms.length>0){
+            newBottom = clothingData.bottoms[Math.floor(Math.random() * clothingData.bottoms.length)];
+          }
+        } while (newBottom === selectedOutfit.bottom&&newBottom!=null);
   
         setSelectedOutfit(prev => ({ ...prev, bottom: newBottom }));
       }
@@ -83,6 +91,8 @@ const OutfitSuggestion = ({ onOutfitSelect }) => {
   };
   
   const handleLovePress = () => {
+    if(!selectedOutfit.top&&!selectedOutfit.bottom)
+      return
     if (isLoved) {
       // 取消選中時的操作
       handleUnlove();
@@ -130,7 +140,12 @@ const OutfitSuggestion = ({ onOutfitSelect }) => {
         
         onPress={() => selectRandomItem(type)}
       >
+      {item ? (
       <Image source={{ uri: item?.url }} style={styles.clothingItem} />
+      ):( <View style={[styles.clothingItem,{justifyContent:'center'}]} >
+        <Text style={{alignSelf:'center'}}>您尚未新增任何上裝照片</Text>  
+      </View>)
+      }
       </TouchableOpacity>
         
       
@@ -149,9 +164,14 @@ const OutfitSuggestion = ({ onOutfitSelect }) => {
             <Text style={styles.reminderText}>
               來隨機搭配一下吧！
             </Text>
+            <View style={{marginTop: 'auto', marginBottom: 25 }}>
             <Text style={styles.reminderText2}>
-              點選圖片能夠重新生成照片喔！
+              點選圖片
             </Text>
+            <Text style={styles.reminderText2}>
+             能夠重新生成照片喔！
+            </Text>
+            </View>
           </View>
           <View style={styles.btnContainer}>
             <TouchableOpacity style={styles.button} onPress={handleOkayPress}>
@@ -171,17 +191,27 @@ const OutfitSuggestion = ({ onOutfitSelect }) => {
               
               <View style={styles.clothingItemContainer}>
               <TouchableOpacity 
-                style={styles.clothingButton} 
-                onPress={() => selectRandomItem('bottom')}
-              >
-                {selectedOutfit.bottom ? (
-                  <Image source={{ uri: selectedOutfit.bottom.url }} style={styles.clothingItem} />
-                ) : (
-                  <View style={[styles.clothingItem]} />
-                )}
-              
-                
-              </TouchableOpacity>
+  style={styles.clothingButton} 
+  onPress={() => selectRandomItem('bottom')}
+>
+  {selectedOutfit.bottom ? (
+    <Image 
+      source={{ uri: selectedOutfit.bottom.url }} 
+      style={styles.clothingItem} 
+    />
+  ) : (
+    clothingData.bottoms.length > 0 ? (
+      <View style={[styles.clothingItem, { justifyContent: 'center' }]} />
+
+    ) : (
+      <View style={[styles.clothingItem, { justifyContent: 'center' }]}>
+        <Text style={{ alignSelf: 'center' }}>
+          您尚未新增任何下裝照片
+        </Text>  
+      </View>
+    )
+  )}
+</TouchableOpacity>
             </View>
           </View>
           
@@ -207,7 +237,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   outfitContainer: {
-    flex: 3,
+    flex: 7,
     flexDirection: 'column',
     justifyContent: 'space-between',
     height: '100%',
@@ -276,7 +306,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   showContainer: {
-    flex: 2,
+    flex: 6,
     height:'100%',
     alignItems: 'center',
     justifyContent: 'center',
@@ -291,6 +321,7 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   reminderTitle: {
+    marginTop:10,
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 5,
@@ -304,7 +335,9 @@ const styles = StyleSheet.create({
    
     fontSize: 14,
     lineHeight: 20,
-    color:'#f39c12'
+    color:'#f39c12',
+    marginTop: 'auto', // 将文本推到底部
+    marginBottom: 1, // 给底部一些间距，根据需要调整
   },
   clothingButton:{
     width:'100%',
