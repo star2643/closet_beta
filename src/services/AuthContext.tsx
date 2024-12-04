@@ -68,7 +68,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       });
     } catch (error) {
-      console.error('Sign in error:', error);
+      //console.error('Sign in error:', error);
       throw error;
     }
   };
@@ -105,7 +105,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
       })
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      //console.error('Error fetching user data:', error);
       
     }
     return (tmp)
@@ -136,7 +136,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         lastLogin: formattedDate,
       });
     } catch (error) {
-      console.error('Sign up error:', error);
+//console.error('Sign up error:', error);
       throw error;
     }
   };
@@ -146,7 +146,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await auth().signOut();
       
     } catch (error) {
-      console.error('Sign out error:', error);
+      //console.error('Sign out error:', error);
       throw error;
     }
   };
@@ -155,7 +155,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await auth().sendPasswordResetEmail(email);
     } catch (error) {
-      console.error('Forgot password error:', error);
+      //console.error('Forgot password error:', error);
       throw error;
     }
   };

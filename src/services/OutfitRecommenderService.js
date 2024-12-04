@@ -103,6 +103,7 @@ class OutfitRecommenderService {
       });
       console.log(response)
       if (!response.ok) {
+        console.log(response)
         throw new Error('分析請求失敗');
       }
 

@@ -335,6 +335,7 @@ function useImageController(model1,model2) {
     try {
       console.log('success enter ')
       const tmp=await imgModel.uploadModel(uri);
+      return tmp
 
     }
     catch (error) {

@@ -426,7 +426,6 @@ function MyWardrobe() {
                 {currentPage === 'details' && (
                   <View style={Wardrobe.pageContent}>
                     <Text style={Wardrobe.modalTitle}>分類: {selectedItem.classes.join(', ')}</Text>
-                    <Text style={Wardrobe.modalTitle}>名稱: {selectedItem.fileName}</Text>
                     {/* 可以在這裡添加更多詳細資訊 */}
                   </View>
                 )}
@@ -554,7 +553,7 @@ function MyWardrobe() {
                             {selectedMarker === index && <Text style={Wardrobe.checkmark}>✓</Text>}
                           </View>
                         </View>
-                        <Text style={Wardrobe.markerText}>標記 {index + 1}: ({coord[0].toFixed(2)}, {coord[1].toFixed(2)})</Text>
+                        <Text style={Wardrobe.markerText}>標記 {index + 1}</Text>
                       </TouchableOpacity>
                     ))}
                 </>
@@ -1065,6 +1064,8 @@ const Wardrobe = StyleSheet.create({
   },
   markerText: {
     flex: 1,
+    fontSize:16,
+    color:'black'
   },
   checkboxContainer: {
     marginRight: 10,

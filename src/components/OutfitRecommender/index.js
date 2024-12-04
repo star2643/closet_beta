@@ -54,8 +54,8 @@ const OutfitRecommender = ({
   console.log(hasRecommended)
   // 初始化 conditions
   const [conditions, setConditions] = useState({
-    Maxtemperature: weatherInfo?.currentWeather?.MaxT?.parameterName || 25,
-    Mintemperature: weatherInfo?.currentWeather?.MinT?.parameterName || 20,
+    Maxtemperature: weatherInfo?.MaxT?.parameterName || 25,
+    Mintemperature: weatherInfo?.MinT?.parameterName || 20,
     occasion: '休閒約會',
     style: '簡約時尚',
     gender: '男性' // 添加默認性別
@@ -156,8 +156,8 @@ const OutfitRecommender = ({
             if (value) {
               setConditions(prev => ({
                 ...prev,
-                Maxtemperature: weatherInfo?.currentWeather?.MaxT?.parameterName || 25,
-                Mintemperature: weatherInfo?.currentWeather?.MinT?.parameterName || 20,
+                Maxtemperature: weatherInfo?.MaxT?.parameterName || 25,
+                Mintemperature: weatherInfo?.MinT?.parameterName || 20,
               }));
             }
           }}

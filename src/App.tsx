@@ -8,9 +8,11 @@ import LoginScreen from './components/LoginScreen';
 import RegisterScreen from './components/RegisterScreen'; // 会员登录页面
 import ProtectedRoute from './services/ProtectedRoute';
 import HomeScreen from './components/HomeScreen';
+
 const Stack = createStackNavigator();
 
 function App() {
+  
   return (
     <AuthProvider>
       <NavigationContainer>
@@ -23,11 +25,11 @@ function App() {
           <Stack.Screen
             name="Login"
             component={LoginScreen}
-            options={{ headerShown: false }} // 隐藏导航栏标题
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="Register"
-            component={RegisterScreen} // 这是包含 HomeScreen 的底部导航栏
+            component={RegisterScreen} 
             options={{ headerShown: false }}
           />
           <Stack.Screen 

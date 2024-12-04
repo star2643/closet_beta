@@ -98,7 +98,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
             }
           }
         } catch (error) {
-          console.error("Error loading data:", error);
+          //console.error("Error loading data:", error);
         } 
         try{
           const loveResult=await imgController.getLoveList();
@@ -107,7 +107,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
           }
         }
         catch(error){
-          console.error("Error loading Love data:", error);
+          //console.error("Error loading Love data:", error);
         }
         setIsLoading(false);
       }

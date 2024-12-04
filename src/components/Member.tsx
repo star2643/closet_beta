@@ -23,6 +23,8 @@ function Member() {
   const [coordinates, setCoordinates] = useState([]);
   const [isModelUploading, setIsModelUploading] = useState(false);
   const [isClosetUploading, setIsClosetUploading] = useState(false);
+  const [isClosetprocess, setIsClosetprocess] = useState(false);
+
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -95,6 +97,7 @@ function Member() {
 
   const handleClosetImagePicker = async () => {
     try {
+      setIsClosetprocess(true)
       const result = await uploadClosetImage();
       setCoordinates(result.coordinates);
       setClosetImage({
@@ -105,14 +108,17 @@ function Member() {
       });
     } catch (error) {
       console.error('上傳圖片時出錯：', error);
+      setIsClosetprocess(false)
     }
+    setIsClosetprocess(false)
   };
 
   const uploadModelToDatabase = async () => {
     try {
       if (uploadModel && modelImage) {
         setIsModelUploading(true); // 開始上傳時設置
-        await uploadModel(modelImage)
+        const tmodel=await uploadModel(modelImage)
+        setModelImage(tmodel)
         Alert.alert("成功", "模型已成功上傳");
         setIsModelModalVisible(false);  // 關閉 Modal
       }
@@ -258,7 +264,14 @@ function Member() {
             )}
           </View>
           <TouchableOpacity style={styles.uploadButton} onPress={handleClosetImagePicker}>
-            <Text style={styles.uploadButtonText}>上傳圖片</Text>
+          {isClosetprocess ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color="white" />
+                  <Text style={[styles.saveButtonText, { marginLeft: 8 }]}>處理中...</Text>
+                </View>
+              ) : (
+                <Text style={styles.uploadButtonText}>上傳圖片</Text>
+              )}
           </TouchableOpacity>
           
           

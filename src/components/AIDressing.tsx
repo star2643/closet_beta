@@ -7,8 +7,10 @@ import RNFS from 'react-native-fs';
 import { useData } from '../services/DataContext'
 import { useRoute } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
-import uploadToCloudinary from '../services/uploadToCloudinary';
+import uploadToImgur from '../services/uploadToCloudinary';
 import OutfitRecommender from './OutfitRecommender';
+
+import ApiConfig from '../config/apiConfig';
 interface InputData {
   top_garment_url: string;
   person_image_url: string;
@@ -25,11 +27,9 @@ interface AitryonData {
 }
 // AIdressing 组件定义
 function AIdressing() {
+  const [apiKey, setApiKey] = useState(null);
 
   
-  const handlePress = (type) => {
-    Alert.alert(`${type}穿搭建議`);
-  };
   
 
   const RenderButtons = () => (
@@ -71,6 +71,22 @@ function AIdressing() {
   const [hasRecommended, setHasRecommended] = useState(false);
   const [recommendation, setRecommendation] = useState(null);
   
+  const convertImageUrl = (originalUrl) => {
+    // 使用你的實際 Fastly service ID: hFoYcbBRKWlVMTJymwA9k4
+    const FASTLY_DOMAIN = "https://hFoYcbBRKWlVMTJymwA9k4.global.ssl.fastly.net";
+    
+    // 構建圖片處理參數
+    const params = new URLSearchParams({
+      url: originalUrl,
+      width: '800',
+      quality: '80',
+      format: 'auto',
+      dpr: 'auto'
+    });
+    
+    return `${FASTLY_DOMAIN}/image/optimize?${params}`;
+  };
+  
 
   const handleOpenRecommender = () => {
     // 從 topClothing 和 bottomClothing 中獲取所有 URL
@@ -100,8 +116,8 @@ function AIdressing() {
         setImageUrl(prevState => {
           const newState = {
             ...prevState,
-            top: selectedOutfit.top,
-            bottom: selectedOutfit.bottom ? selectedOutfit.bottom : null,
+            top: selectedOutfit.top.url,
+            bottom: selectedOutfit.bottom ? selectedOutfit.bottom.url : null,
           };
           
           return newState; // 返回更新后的状态
@@ -162,6 +178,7 @@ function AIdressing() {
         return base64;
       } catch (error) {
         console.error('Error converting file to base64:', error);
+        Alert.alert('Error converting file to base64:', '發生未知錯誤');
         throw error; // 拋出錯誤而不是返回 null，讓調用者決定如何處理錯誤
       }
     }
@@ -170,52 +187,49 @@ function AIdressing() {
   };
   
   // 輔助函數來確定 MIME 類型
-  
-  const uploadToFreeimage = async (imagesUrl) => {  //-----------------------------------第三方圖庫
-    const apiKey = '6d207e02198a847aa98d0a2a901485a5'; // Freeimage.host 的 API key
-    const apiUrl = 'https://freeimage.host/api/1/upload';
+  const uploadToFreeimage = async (imagesUrl) => {
+    const Tmpresult_url = [];
     
-    const Tmpresult_url=[]
-    for(let i=0;i<3;i++){
-      console.log(imagesUrl[title[i]]+" is processing")
-      const base64Image = await convertToBase64(imagesUrl[title[i]]);
-      console.log(base64Image)
-      if (!base64Image) {
-        if(title[i]=='bottom'){
-          Tmpresult_url.push('')
-          continue
-        }
-        else{
-        throw new Error(`Failed to convert image to base64: ${title[i]}`);
-        }
-      }
-      const formData = new FormData();
-      formData.append('key', apiKey);
-      formData.append('source', base64Image);
-      formData.append('format', 'json');
-
+    for(let i = 0; i < 3; i++) {
       try {
-        const tmpurl = await uploadToCloudinary(base64Image);
-
-        if (tmpurl) {
-          Tmpresult_url.push(tmpurl)
-              
-              
-            
-          
-          console.log(title[i],':',tmpurl);
-
-        } else {
-          console.log('Unexpected API1 response:', response.data);
-          Alert.alert('上傳失敗', '服務器返回了意外的響應格式');
+        if (!imagesUrl[title[i]]) {
+          if(title[i] === 'bottom') {
+            Tmpresult_url.push('');
+            continue;
+          }
+          throw new Error(`No image for ${title[i]}`);
         }
+  
+        const imageSource = imagesUrl[title[i]];
+        let processedUrl;
+  
+        // 如果是 URL
+        if (typeof imageSource === 'string' && imageSource.startsWith('http')) {
+          processedUrl = `https://images.weserv.nl/?url=${encodeURIComponent(imageSource)}`;
+        } 
+        // 如果是本地文件或 base64
+        else {
+          const imgurUrl = await uploadToImgur(
+            imageSource.startsWith('file:') ? await convertToBase64(imageSource) : imageSource
+          );
+          processedUrl = `https://images.weserv.nl/?url=${encodeURIComponent(imgurUrl)}`;
+        }
+  
+        console.log(`${title[i]} processed URL:`, processedUrl);
+        Tmpresult_url.push(processedUrl);
+  
       } catch (error) {
-        console.error('Error uploading image:', error);
-        Alert.alert('上傳失敗', error.message || '發生未知錯誤');
+        console.error(`Error processing ${title[i]}:`, error);
+        if (title[i] === 'bottom') {
+          Tmpresult_url.push('');
+        } else {
+          throw error;
+        }
       }
     }
-    console.log(Tmpresult_url)
-    
+  
+  
+    console.log('處理結果:', Tmpresult_url);
     
     if (Tmpresult_url && Tmpresult_url.length === 3) {
       await setResultUrl(prevState => {
@@ -224,12 +238,10 @@ function AIdressing() {
         return newState;
       });
     } else {
-      console.error("Tmpresult_url is invalid:", Tmpresult_url);
+      throw new Error("處理圖片失敗");
     }
-
-    
-    
   };
+  
   
 
   const handleImageUpload = () => {
@@ -304,16 +316,11 @@ function AIdressing() {
       </TouchableOpacity>
     );
   };
-  const submitImageSynthesisTask = async () => {  //----------------------------------開始運算
-    setIsAPILoading(true);
-    const apiUrl = "https://dashscope.aliyuncs.com/api/v1/services/aigc/image2image/image-synthesis";
-    const headers = {
-      "Content-Type": "application/json",
-      "Authorization": "sk-c08abee2ece5482aa843a8737d23294e",  // 替换为你的 API Key
-      "X-DashScope-Async": "enable"
-    };
+  const submitImageSynthesisTask = async () => {
+    const { baseUrl, headers } = ApiConfig.getDashScopeConfig();
+    const apiUrl = `${baseUrl}/services/aigc/image2image/image-synthesis`;
     
-    const data: AitryonData = {
+    const data = {
       model: "aitryon",
       input: {
         top_garment_url: resultUrl.top,
@@ -324,46 +331,46 @@ function AIdressing() {
         restore_face: true
       }
     };
+  
     if (resultUrl.bottom?.trim()) {
       data.input.bottom_garment_url = resultUrl.bottom;
     }
-    for(let i=0;i<10;i++){
+  
+    for (let i = 0; i < 10; i++) {
       try {
         const response = await axios.post(apiUrl, data, { headers });
       
         if (response.status === 200) {
           setResult(response.data);
-          setTaskId(response.data.output.task_id)
-          startPolling()
-          Alert.alert("成功", "任務提交成功");
-          break
+          setTaskId(response.data.output.task_id);
+          startPolling();
+          Alert.alert("正在生成您專屬的穿搭效果", "可能會需要一些時間，請您耐心等候");
+          break;
         } else {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
       } catch (error) {
-        console.error("任務提交失敗:", error);
+        //console.error("任務提交失敗:", error);
+        if (i === 9) {  // 最後一次嘗試失敗
+          setIsAPILoading(false);
+          Alert.alert("啊！好像出了點問題...", "或許是您的圖片暫時不支援，請您稍後或換張照片後重新嘗試");
+        }
       } 
     }
-    
-    setResultUrl({ top: '', bottom: '' ,people:''})
-
+    setResultUrl({ top: '', bottom: '', people: '' });
   };
   const uploadDirectly = async () => {
-    setResultUrl({ top: '', bottom: '' ,people:''})
+    setResultUrl({ top: '', bottom: '', people: '' });
     setIsAPILoading(true);
-    setaccessToApi(true)
+    setaccessToApi(true);
     try {
-      
       await uploadToFreeimage(imagesUrl);
-      
     } catch (error) {
-      Alert.alert('錯誤'+error);
-      console.log(error)
-      setaccessToApi(false)
-    } finally {
-      setIsAPILoading(false);
-      setaccessToApi(false)
-    }
+      Alert.alert('錯誤' + error);
+      console.log(error);
+      setaccessToApi(false);
+    } 
+    
   };
   useEffect(() => {
     if (result !== null) {
@@ -371,45 +378,43 @@ function AIdressing() {
     }
   }, [result]);
   
-  const checkTaskStatus = useCallback(async () => { //---------------------------檢查結果
+  const checkTaskStatus = useCallback(async () => {
     if (!taskId) return;
-
+  
     try {
-      const queryUrl = `https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`;
-      const response = await axios.get(queryUrl, {
-        headers: {
-          'Authorization': 'sk-c08abee2ece5482aa843a8737d23294e',
-        },
-      });
-
+      const { baseUrl, headers } = ApiConfig.getDashScopeConfig();
+      const queryUrl = `${baseUrl}/tasks/${taskId}`;
+      const response = await axios.get(queryUrl, { headers });
+      console.log(response)
       if (response.status === 200) {
         const result = response.data;
         setTaskStatus(result.output.task_status);
-        console.log("完整的响应数据:", result);
-
+        
         if (result.output.task_status === "SUCCEEDED") {
           setFinalImageUrl(result.output.image_url);
-          setIsPolling(false); // 停止轮询
-          setTaskId('')
-          setResultUrl({ top: '', bottom: '' ,people:''})
+          setTaskId('');
           setIsAPILoading(false);
+          setIsPolling(false);
+          
+          Alert.alert("任務成功！", "圖片生成完成");
         } else if (result.output.task_status === "FAILED") {
           setError("任务失败");
-          setResultUrl({ top: '', bottom: '' ,people:''})
-          setIsPolling(false); // 停止轮询
+          setTaskId('');
           setIsAPILoading(false);
+          setIsPolling(false);
+          Alert.alert("哎呀！好像出了點問題...", "伺服器當前可能出了問題，或您提供的照片可能不被支援，請您稍後或換張照片後重試");
         }
-        // 如果状态是 "PENDING" 或 "RUNNING"，继续轮询
       } else {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
     } catch (error) {
-      console.error("查询失败:", error);
-      setResultUrl({ top: '', bottom: '' ,people:''})
-      setError(error.message);
-      setIsPolling(false); // 出错时停止轮询
+      console.error("查詢失敗:", error);
+      setTaskId('');
+      setIsAPILoading(false);
+      setIsPolling(false);
+      Alert.alert("失敗", "查詢狀態失敗");
     }
-  }, [taskId, setTaskStatus, setImageUrl, setError, setIsPolling]);
+  }, [taskId]);
 
   useEffect(() => {
     let intervalId;
@@ -560,7 +565,7 @@ function AIdressing() {
               setHasRecommended={setHasRecommended}
               recommendation={recommendation}
               setRecommendation={setRecommendation}
-              apiKey="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"
+              apiKey={ApiConfig.getOpenAiConfig().apiKey}
               clothingUrls={selectedClothing}
               onClose={handleCloseRecommender}
               onRecommendationComplete={handleRecommendationComplete}

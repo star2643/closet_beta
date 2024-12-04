@@ -26,7 +26,7 @@ class imageFirebaseDAO extends userDAO{
       })
       
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      //console.error('Error fetching user data:', error);
       return null;
     }
     });
@@ -47,7 +47,7 @@ class imageFirebaseDAO extends userDAO{
             }
           });
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        //console.error('Error fetching user data:', error);
         reject(error);
       }
     });
@@ -66,7 +66,7 @@ class imageFirebaseDAO extends userDAO{
       })
       return w ? w : null;
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      //console.error('Error fetching user data:', error);
       return null;
     }
    
@@ -104,7 +104,7 @@ class imageFirebaseDAO extends userDAO{
         jacket_number:imageIds.jacket_number+update_num[3]
       }).then(() => console.log('Data updated..'));
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      //console.error('Error fetching user data:', error);
       return null;
     }
    
@@ -127,7 +127,7 @@ class imageFirebaseDAO extends userDAO{
       this.updateUserImageId(imageIds,classes)
       return thisImgId
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      //console.error('Error fetching user data:', error);
       return null;
     }
    
@@ -156,7 +156,7 @@ class imageFirebaseDAO extends userDAO{
       console.log('File available at:', downloadURL);
       return downloadURL;
     } catch (error) {
-      console.error('Upload error:', error);
+      //console.error('Upload error:', error);
       throw error;
     }
   };
@@ -204,7 +204,7 @@ class imageFirebaseDAO extends userDAO{
       const res=JSON.stringify(tmpImageArray, null, 2)
       return res
     } catch (error) {
-      console.error("获取文件列表时出错:", error);
+      //console.error("获取文件列表时出错:", error);
     }
   };
   uploadModelsToDataBase= async (modelUrl) =>{
@@ -231,8 +231,8 @@ class imageFirebaseDAO extends userDAO{
       console.log('File available at:', downloadURL);
       return downloadURL;
     } catch (error) {
-      console.error('Upload error:', error);
-      throw error;
+      //console.error('Upload error:', error);
+      //throw error;
     }
   }
   uploadClosetToDataBase= async (closetData:{uri:string,originalWidth:number,originalHeight:number,coords:number[][]}) =>{
@@ -267,13 +267,13 @@ class imageFirebaseDAO extends userDAO{
           coordinates:closetData.coords
         }).then(() => console.log('closet Data updated..'));
       } catch (error) {
-        console.error('Error Love Outfit data:', error);
+        //console.error('Error Love Outfit data:', error);
         return null;
       }
       return downloadURL;
     } catch (error) {
-      console.error('Upload error:', error);
-      throw error;
+      //console.error('Upload error:', error);
+      //throw error;
     }
     
   }
@@ -291,8 +291,8 @@ class imageFirebaseDAO extends userDAO{
       // 返回下载 URL
       return url;
     } catch (error) {
-      console.error('Error getting image from Firebase:', error);
-      throw error;
+      //console.error('Error getting image from Firebase:', error);
+      //throw error;
     }
   };
   getClosetImageFromFirebase = async () => {
@@ -331,8 +331,8 @@ class imageFirebaseDAO extends userDAO{
       return closetData;  // 直接返回 closetData
   
     } catch (error) {
-      console.error('Error getting image from Firebase:', error);
-      throw error;
+      //console.error('Error getting image from Firebase:', error);
+      //throw error;
     }
   };
   processLoveOutfit =async(outfit,processType,outfitId)=>{
@@ -386,7 +386,7 @@ class imageFirebaseDAO extends userDAO{
         }));
       })
       .catch((error) => {
-        console.error("Error fetching love outfits:", error);
+        //console.error("Error fetching love outfits:", error);
         return [];
       });
   };
@@ -479,8 +479,8 @@ class imageFirebaseDAO extends userDAO{
       this.removeClothesAndFavorite(imageId)
       return fileName
     } catch (error) {
-      console.error('刪除服飾圖片時發生錯誤:', error);
-      throw error; // 重新拋出錯誤,讓調用者可以處理
+      //console.error('刪除服飾圖片時發生錯誤:', error);
+     // throw error; // 重新拋出錯誤,讓調用者可以處理
     }
   }
   async removeClothesAndFavorite(imageId) {
@@ -523,7 +523,7 @@ class imageFirebaseDAO extends userDAO{
       console.log('服飾圖片和相關收藏已成功處理');
       return true;
     } catch (error) {
-      console.error('刪除服飾圖片和收藏時發生錯誤:', error);
+      //console.error('刪除服飾圖片和收藏時發生錯誤:', error);
       return false;
     }
   }
